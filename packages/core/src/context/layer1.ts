@@ -14,6 +14,37 @@ import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
 import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
+export class L1testChain {
+  web3: Web3
+  host: string
+  port: number
+  chainId: number
+  lastSnapshot: number | null // BlockNumber?
+
+  // TODO: block public chain by chainId
+
+  constructor(web3: Web3, host: string, port: number, chainId: number) {
+    this.web3 = web3
+    this.host = host
+    this.port = port
+    this.chainId = chainId
+  }
+
+  async getSnapshot() {
+    return this.lastSnapshot
+  }
+
+  async takeSnapshot() {
+    // TODO: make request 'evm_snapshot'
+    this.lastSnapshot = 1
+  }
+
+  async revertSnapshot() {
+    // TODO; make request 'evm_revert'
+    this.lastSnapshot = null
+  }
+}
+
 export class L1Contract extends ZkopruContract {
   web3: Web3
 
