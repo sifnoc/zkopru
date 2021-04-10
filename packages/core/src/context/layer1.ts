@@ -14,33 +14,125 @@ import * as ffjs from 'ffjavascript'
 import { soliditySha3 } from 'web3-utils'
 import { verifyingKeyIdentifier, VerifyingKey } from '../snark/snark-verifier'
 
+interface web3Extend extends Web3 {
+  evm: {
+    setAutomine: (arg: boolean) => any
+    setIntervalMining: (arg: number) => any
+    snapshot: () => number
+    revert: (snapshotNumber: number) => boolean
+    increaseBlockTime: (seconds: number) => {}
+    setNextBlockTimestamp: (timestamp: number) => {}
+  }
+}
+
 export class L1testChain {
-  web3: Web3
+  web3: web3Extend
   host: string
   port: number
-  chainId: number
-  lastSnapshot: number | null // BlockNumber?
+  miningInterval: number
 
-  // TODO: block public chain by chainId
+  private lastSnapshot: number | null // How many attempt to take snapshot
 
-  constructor(web3: Web3, host: string, port: number, chainId: number) {
-    this.web3 = web3
+  constructor(host: string, port: number, miningInterval?: number) {
     this.host = host
     this.port = port
-    this.chainId = chainId
+    this.miningInterval = miningInterval ?? 0 // Default 0 is mean that not start mining
+    this.lastSnapshot = null
+
+    // TODO: refactor these web3 extend.. name as web3-hardhat?
+    var web3Extend = new Web3()
+
+    web3Extend.setProvider(new Web3.providers.HttpProvider(host + ':' + port))
+
+    web3Extend.extend({
+      property: 'evm',
+      methods: [
+        {
+          name: 'setAutomine',
+          call: 'evm_setAutomine', // hardhat RPC method
+          params: 1,
+        },
+        {
+          name: 'setIntervalMining',
+          call: 'evm_setIntervalMining', // // hardhat RPC method
+          params: 1,
+        },
+        {
+          name: 'snapshot',
+          call: 'evm_snapshot',
+          params: 0,
+          // @ts-ignore
+          outputFormatter: Web3.utils.hexToNumber,
+        },
+        {
+          name: 'revert',
+          call: 'evm_revert',
+          params: 1,
+          // @ts-ignore
+          inputFormatter: [Web3.utils.numberToHex],
+        },
+        {
+          name: 'increaseMineTime',
+          call: 'evm_increaseTime',
+          params: 1,
+        },
+        {
+          name: 'setNextBlockTimestamp',
+          call: 'evm_setNextBlockTimestamp',
+          params: 1,
+        },
+      ],
+    })
+
+    this.web3 = web3Extend as web3Extend
   }
 
-  async getSnapshot() {
+  async getCurrentSnapshot() {
     return this.lastSnapshot
   }
 
-  async takeSnapshot() {
-    // TODO: make request 'evm_snapshot'
-    this.lastSnapshot = 1
+  // TODO: what are differences of get or set Interval
+
+  get getInterval() {
+    return this.miningInterval
   }
 
-  async revertSnapshot() {
+  setInterval(interval: number) {
+    this.miningInterval = interval
+    this.getInterval
+  }
+
+  async stopMine(): Promise<Boolean> {
+    const automineResult = await this.web3.evm.setAutomine(false)
+    const intervalMiningResult = await this.web3.evm.setIntervalMining(0)
+    console.log(
+      `Result are automine = ${automineResult} intervalMining = ${intervalMiningResult}`,
+    )
+    return automineResult && intervalMiningResult == 0
+  }
+
+  startMine(interval: number = this.miningInterval) {
+    this.web3.evm.setAutomine(true)
+    this.web3.evm.setIntervalMining(interval)
+    console.log('Start Mining')
+  }
+
+  async snapshot() {
+    // TODO: make request 'evm_snapshot'
+    // 1. stopMining
+    // 2. check current blockNumber
+    // 3. send snapshot call
+    // 4. startMining
+
+    // 3
+    const snapshotCount = this.web3.evm.snapshot()
+    this.lastSnapshot = snapshotCount
+    return snapshotCount
+  }
+
+  async revert() {
     // TODO; make request 'evm_revert'
+    // 1. stop mining (is mining or not)
     this.lastSnapshot = null
   }
 }

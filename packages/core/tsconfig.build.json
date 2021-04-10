@@ -7,7 +7,7 @@
     "noImplicitAny": false,
     "tsBuildInfoFile": "../../.build-cache/core.tsbuildinfo"
   },
-  "include": ["src"],
+  "include": ["src", "hardhat.config.ts"],
   "references": [
     { "path": "../account/tsconfig.build.json", "prepend": false },
     { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },

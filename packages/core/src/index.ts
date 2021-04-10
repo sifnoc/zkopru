@@ -26,6 +26,6 @@ export {
   getMassMigrations,
   sqlToHeader,
 } from './block'
-export { L1Contract } from './context/layer1'
+export { L1Contract, L1testChain } from './context/layer1'
 export { L2Chain } from './context/layer2'
 export { SNARKVerifier, verifyingKeyIdentifier } from './snark/snark-verifier'
