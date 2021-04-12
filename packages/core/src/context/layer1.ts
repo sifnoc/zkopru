@@ -6,7 +6,7 @@ import {
   TxUtil,
 } from '@zkopru/contracts'
 import { Config } from '@zkopru/database'
-import { Account, TransactionReceipt } from 'web3-core'
+import { Account, HttpProvider, TransactionReceipt } from 'web3-core'
 import { hexify } from '@zkopru/utils'
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
@@ -27,22 +27,20 @@ interface web3Extend extends Web3 {
 
 export class L1testChain {
   web3: web3Extend
-  host: string
-  port: number
+  url: string
   miningInterval: number
 
   private lastSnapshot: number | null // How many attempt to take snapshot
 
-  constructor(host: string, port: number, miningInterval?: number) {
-    this.host = host
-    this.port = port
+  constructor(url: string, miningInterval?: number) {
+    this.url = url
     this.miningInterval = miningInterval ?? 0 // Default 0 is mean that not start mining
     this.lastSnapshot = null
 
     // TODO: refactor these web3 extend.. name as web3-hardhat?
-    var web3Extend = new Web3()
+    const web3Extend = new Web3()
 
-    web3Extend.setProvider(new Web3.providers.HttpProvider(host + ':' + port))
+    web3Extend.setProvider(new Web3.providers.HttpProvider(url))
 
     web3Extend.extend({
       property: 'evm',
@@ -102,7 +100,7 @@ export class L1testChain {
     this.getInterval
   }
 
-  async stopMine(): Promise<Boolean> {
+  async stopMine(): Promise<boolean> {
     const automineResult = await this.web3.evm.setAutomine(false)
     const intervalMiningResult = await this.web3.evm.setIntervalMining(0)
     console.log(

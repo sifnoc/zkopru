@@ -5,9 +5,10 @@
     "outDir": "./dist",
     "allowJs": true,
     "noImplicitAny": false,
-    "tsBuildInfoFile": "../../.build-cache/core.tsbuildinfo"
+    "tsBuildInfoFile": "../../.build-cache/core.tsbuildinfo",
+    "skipLibCheck": true
   },
-  "include": ["src", "hardhat.config.ts"],
+  "include": ["src"],
   "references": [
     { "path": "../account/tsconfig.build.json", "prepend": false },
     { "path": "../babyjubjub/tsconfig.build.json", "prepend": false },

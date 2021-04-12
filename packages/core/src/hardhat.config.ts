@@ -1,7 +1,5 @@
-import { HardhatUserConfig } from 'hardhat/types'
 import '@nomiclabs/hardhat-ethers'
-// import 'hardhat-deploy'
-// import 'hardhat-deploy-ethers'
+import { HardhatUserConfig } from 'hardhat/types'
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -16,7 +14,7 @@ const config: HardhatUserConfig = {
     },
   },
   paths: {
-    tests: './tests/uint/layer1',
+    tests: './tests/uint/L1testChain',
   },
 }
 export default config
