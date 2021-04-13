@@ -1,4 +1,4 @@
-import '@nomiclabs/hardhat-ethers'
+import '@nomiclabs/hardhat-web3'
 import { HardhatUserConfig } from 'hardhat/types'
 
 const config: HardhatUserConfig = {

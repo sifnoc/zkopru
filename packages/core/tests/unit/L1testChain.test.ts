@@ -39,7 +39,7 @@ describe('layer1.ts - L1testChain', async () => {
   it('take a snapshot', async () => {
     testChain.web3.evm.mineBlock()
     const snapshotResult: snapShot = await testChain.snapshot()
-    assert.equal(snapshotResult.snapShot, 1)
+    assert.equal(snapshotResult.count, 1)
     assert.equal(snapshotResult.blockNumber, 3)
   })
 

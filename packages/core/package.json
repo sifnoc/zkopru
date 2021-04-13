@@ -31,7 +31,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@types/mocha": "^8.2.2",
     "@zkopru/account": "file:../account",
     "@zkopru/babyjubjub": "file:../babyjubjub",
     "@zkopru/contracts": "file:../contracts",
@@ -53,7 +52,6 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "ethers": "^5.1.0",
     "hardhat": "^2.1.2",
