@@ -9,6 +9,7 @@
   "scripts": {
     "bootstrap": "yarn && yarn images pull && yarn build && lerna run gendata",
     "postinstall": "lerna bootstrap && yarn clean && shx rm -rf packages/*/node_modules",
+    "image:deployed-geth": "docker build -f dockefiles/Contract.geth.dockerfiles -t Zkopru_deployed_geth-$(git rev-parse HEAD | cut -c 1-7)",
     "images": "docker-compose -f dockerfiles/docker-compose.yml",
     "images:pull": "docker-compose -f dockerfiles/docker-compose.yml pull",
     "images:build": "docker-compose -f dockerfiles/docker-compose.yml build",

@@ -40,9 +40,15 @@ module.exports = {
 
   networks: {
     develop: {
-      host: "127.0.0.1", // Localhost (default: none)
-      port: 8545, // Standard Ethereum port (default: none)
-      network_id: "*" // Any network (default: none)
+      // host: "127.0.0.1", // Localhost (default: none)
+      // port: 8545, // Standard Ethereum port (default: none)
+      network_id: "*", // Any network (default: none)
+      provider: () => {
+        return new HDWalletProvider(
+          "4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d", // Account #0 of ganache-cli's default HDwallet
+          "http://127.0.0.1:8545"
+        );
+      }
     },
     develop2: {
       host: "127.0.0.1", // Localhost (default: none)
