@@ -19,4 +19,4 @@ services:
       - 'testnet'
     environment:
       PORT: 1234
-    command: gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json
+    command: bash -c "sleep 2 && node /proj/packages/cli/dist/issueDebug.js"
