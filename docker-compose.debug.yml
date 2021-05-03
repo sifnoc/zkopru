@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  testnet:
+    ports:
+      - "5000:5000"
+    build:
+      context: ./packages/contracts/
+      dockerfile: ../../dockerfiles/Contract.dockerfile
+    command: ganache-cli --db=/data -i 20200406 -p 5000 --gasLimit 12000000 --deterministic --host 0.0.0.0 --secure --blockTime 10
+  coordinator:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Cli.debug.dockerfile
+    ports:
+      - "1234:1234"
+      - "8888:8888"
+    depends_on:
+      - 'testnet'
+    environment:
+      PORT: 1234
+    command: gotty -w --port 1234 node /proj/packages/cli/dist/apps/coordinator/cli.js --config /proj/packages/cli/coordinator.dev.json
