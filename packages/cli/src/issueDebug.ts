@@ -60,8 +60,8 @@ export async function genAccounts(hdWallet: HDWallet, num: number) {
   const accounts: ZkAccount[] = []
 
   // Account 0 - Coordinator
-  // Account 1 - Validator?
-  for (let i = 2; i < num + 2; i++) {
+  // Account 1 - Validator
+  for (let i = 0; i < num; i++) {
     const account = await hdWallet.createAccount(i)
     accounts.push(account)
   }
@@ -96,16 +96,18 @@ export async function getDepositTx(wallet, note: Note, fee: F) {
   return tx
 }
 
-// Two deposit consequence are cause Tx revert
-async function issueCase1() {
-  logger.info('Issue Case 1 - two deposit transactions from same account')
+// @ts-ignore
+async function Case0(web3: Web3) {
+  logger.info(
+    'Case 0 - two deposit transactions from same account with interval',
+  )
   const { hdWallet, webSocketProvider } = await getProviders(
     testnet,
     mnemonic,
     'helloworld',
   )
 
-  const accounts = await genAccounts(hdWallet, 5)
+  const accounts = await genAccounts(hdWallet, 6)
 
   const coordinatorMockupDB = await SQLiteConnector.create(schema, ':memory:')
   const node: FullNode = await FullNode.new({
@@ -158,30 +160,30 @@ async function issueCase1() {
 
   logger.info(`Wallet node is running? ${wallet.node.isRunning().valueOf()}`)
 
-  if (wallet.node.isRunning()) {
+  if (!wallet.node.isRunning()) {
     logger.info('Now is running')
     wallet.node.start()
   }
-  sleep(5000)
-  logger.info(`${wallet.accounts.length} accounts in Wallet`) // 5 accounts
+  await sleep(1000)
+  logger.info(`${wallet.accounts.length} accounts in Wallet`) // 6 accounts
 
   // 3. Start Deposit Tx with two accounts
 
-  // 3-1. Send Deposit tx from account#3 0x22d...
-  wallet.setAccount(2)
+  // 3-1. Send Deposit tx from account#4 0xd03..
+  wallet.setAccount(accounts[4])
 
   const note1 = Utxo.newEtherNote({
-    owner: accounts[2].zkAddress,
+    owner: accounts[4].zkAddress,
     eth,
   })
 
   const depositTx1 = await getDepositTx(wallet, note1, Fp.strictFrom(fee))
 
-  logger.info(`Account ${accounts[2].ethAddress} sent deposit Tx`)
+  logger.info(`Account ${accounts[4].ethAddress} sent deposit Tx`)
   try {
     const receipt1 = await wallet.node.layer1.sendTx(
       depositTx1,
-      accounts[2].ethAccount,
+      accounts[4].ethAccount,
       {
         value: note1
           .eth()
@@ -196,20 +198,34 @@ async function issueCase1() {
     logger.error(err)
   }
 
-  // 3-2. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
+  // Wait coordinator's committedDeposit Tx
+  logger.info("Wait for coordinator's commitDeposit Tx")
+  const latestCoordinatorTxCount = await web3.eth.getTransactionCount(
+    accounts[0].ethAddress,
+  )
+  for (let i = 0; i < 30; i++) {
+    if (
+      latestCoordinatorTxCount !==
+      (await web3.eth.getTransactionCount(accounts[0].ethAddress))
+    ) {
+      break
+    }
+    await sleep(1000)
+  }
 
+  // 3-2. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
   const note2 = Utxo.newEtherNote({
-    owner: accounts[2].zkAddress,
+    owner: accounts[4].zkAddress,
     eth,
   })
 
   const depositTx2 = await getDepositTx(wallet, note2, Fp.strictFrom(fee))
 
-  logger.info(`Account ${accounts[2].ethAddress} sent deposit Tx`)
+  logger.info(`Account ${accounts[4].ethAddress} sent deposit Tx`)
   try {
     const receipt2 = await wallet.node.layer1.sendTx(
       depositTx2,
-      accounts[2].ethAccount,
+      accounts[4].ethAccount,
       {
         value: note2
           .eth()
@@ -233,17 +249,155 @@ async function issueCase1() {
   wallet.node.stop() // node stop
   coordinator.stop()
 }
-
-// Two deposit consequence are cause Tx revert
-async function issueCase2() {
-  logger.info('Issue Case 2 - two deposit transactions from diffrent accounts')
+// @ts-ignore
+async function Case1() {
+  logger.info('Case 1 - two deposit transactions from same account')
   const { hdWallet, webSocketProvider } = await getProviders(
     testnet,
     mnemonic,
     'helloworld',
   )
 
-  const accounts = await genAccounts(hdWallet, 5)
+  const accounts = await genAccounts(hdWallet, 6)
+
+  const coordinatorMockupDB = await SQLiteConnector.create(schema, ':memory:')
+  const node: FullNode = await FullNode.new({
+    address: zkopruContract, // Zkopru contract
+    provider: webSocketProvider,
+    db: coordinatorMockupDB,
+    slasher: accounts[1].ethAccount,
+  })
+
+  const coordinatorAccount = accounts[0].ethAccount
+
+  const coordinatorConfig = {
+    bootstrap: true,
+    address: zkopruContract,
+    maxBytes: 131072,
+    maxBid: 20000,
+    vhosts: 'localhost,127.0.0.1',
+    priceMultiplier: 48,
+    port: 8888,
+  }
+
+  logger.info('Node Start >> ', node.start())
+
+  const coordinator = new Coordinator(
+    node,
+    coordinatorAccount,
+    coordinatorConfig,
+  )
+
+  // 1. Run coordinator
+  await coordinator.start()
+
+  const events = ['start', 'stop']
+  events.forEach(event => {
+    coordinator.on(event, res => logger.info(`Coordinator [${event}] >`, res))
+  })
+
+  // 2. Get Wallet
+  const walletMockupDB = await SQLiteConnector.create(schema, ':memory:')
+  const wallet = new ZkWallet({
+    db: walletMockupDB,
+    wallet: hdWallet,
+    node,
+    accounts,
+    erc20: [],
+    erc721: [],
+    coordinator: 'http://localhost:8888',
+    snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
+  })
+
+  logger.info(`Wallet node is running? ${wallet.node.isRunning().valueOf()}`)
+
+  if (!wallet.node.isRunning()) {
+    logger.info('Now is running')
+    wallet.node.start()
+  }
+  await sleep(1000)
+  logger.info(`${wallet.accounts.length} accounts in Wallet`) // 5 accounts
+
+  // 3. Start Deposit
+
+  // 3-1. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
+  wallet.setAccount(accounts[4])
+
+  const note1 = Utxo.newEtherNote({
+    owner: accounts[4].zkAddress,
+    eth,
+  })
+
+  const depositTx1 = await getDepositTx(wallet, note1, Fp.strictFrom(fee))
+
+  logger.info(`Account ${accounts[4].ethAddress} sent deposit Tx`)
+  try {
+    const receipt1 = await wallet.node.layer1.sendTx(
+      depositTx1,
+      accounts[4].ethAccount,
+      {
+        value: note1
+          .eth()
+          .add(fee)
+          .toString(),
+      },
+    )
+    logger.info(
+      `Receipt >> ${util.inspect(receipt1, { showHidden: true, depth: null })}`,
+    )
+  } catch (err) {
+    logger.error(err)
+  }
+
+  // 3-2. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
+  wallet.setAccount(accounts[4])
+
+  const note2 = Utxo.newEtherNote({
+    owner: accounts[4].zkAddress,
+    eth,
+  })
+
+  const depositTx2 = await getDepositTx(wallet, note2, Fp.strictFrom(fee))
+
+  logger.info(`Account ${accounts[4].ethAddress} sent deposit Tx`)
+  try {
+    const receipt2 = await wallet.node.layer1.sendTx(
+      depositTx2,
+      accounts[4].ethAccount,
+      {
+        value: note2
+          .eth()
+          .add(fee)
+          .toString(),
+        gasPrice: 20000000000,
+      },
+    )
+    logger.info(
+      `Receipt >>  ${util.inspect(receipt2, {
+        showHidden: true,
+        depth: null,
+      })}`,
+    )
+    if (!receipt2?.status) {
+      logger.warn('Second deposit Tx reverted!')
+    }
+  } catch (err) {
+    logger.error(err)
+  }
+
+  wallet.node.stop() // node stop
+  coordinator.stop()
+}
+// @ts-ignore
+async function Case2() {
+  logger.info('Case 2 - two deposit transactions from diffrent accounts')
+  const { hdWallet, webSocketProvider } = await getProviders(
+    testnet,
+    mnemonic,
+    'helloworld',
+  )
+
+  const accounts = await genAccounts(hdWallet, 6)
 
   const coordinatorMockupDB = await SQLiteConnector.create(schema, ':memory:')
   const node: FullNode = await FullNode.new({
@@ -296,29 +450,31 @@ async function issueCase2() {
 
   logger.info(`Wallet node is running?, ${wallet.node.isRunning().valueOf()}`)
 
-  if (wallet.node.isRunning()) {
+  if (!wallet.node.isRunning()) {
     logger.info('Now is running')
     wallet.node.start()
   }
-  sleep(5000)
+  await sleep(1000)
   logger.info(`${wallet.accounts.length} accounts in Wallet`) // 5 accounts
 
   // 3. Start Deposit Tx with two accounts
-  // 3-1. Send Deposit tx from account#3
-  wallet.setAccount(2)
+
+  // 3-1. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
+  wallet.setAccount(accounts[4])
+  logger.info(`Set Wallet Account to ${wallet.account}`)
 
   const note1 = Utxo.newEtherNote({
-    owner: accounts[2].zkAddress,
+    owner: accounts[4].zkAddress,
     eth,
   })
 
   const depositTx1 = await getDepositTx(wallet, note1, Fp.strictFrom(fee))
 
-  logger.info(`Account ${accounts[2].ethAddress} sent deposit Tx`)
+  logger.info(`Account ${accounts[4].ethAddress} sent deposit Tx`)
   try {
     const receipt1 = await wallet.node.layer1.sendTx(
       depositTx1,
-      accounts[2].ethAccount,
+      accounts[4].ethAccount,
       {
         value: note1
           .eth()
@@ -333,26 +489,27 @@ async function issueCase2() {
     logger.error(err)
   }
 
-  // 3-2. Send Deposit tx from account#4 0xd03ea8624C8C5987235048901fB614fDcA89b117
-  wallet.setAccount(3)
+  // 3-2. Send Deposit tx from account#5 0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC
+  wallet.setAccount(accounts[5])
 
   const note2 = Utxo.newEtherNote({
-    owner: accounts[3].zkAddress,
+    owner: accounts[5].zkAddress,
     eth,
   })
 
   const depositTx2 = await getDepositTx(wallet, note2, Fp.strictFrom(fee))
 
-  logger.info(`Account ${accounts[3].ethAddress} sent deposit Tx`)
+  logger.info(`Account ${accounts[5].ethAddress} sent deposit Tx`)
   try {
     const receipt2 = await wallet.node.layer1.sendTx(
       depositTx2,
-      accounts[2].ethAccount,
+      accounts[5].ethAccount,
       {
         value: note2
           .eth()
           .add(fee)
           .toString(),
+        gasPrice: 40000000000,
       },
     )
     logger.info(
@@ -387,7 +544,6 @@ async function main() {
   prettyStream.pipe(process.stdout)
   logStream.addStream(prettyStream)
 
-  // TODO :
   // 0. Set Provider and Take Snapshot on testnet
   const httpProvider = new Web3.providers.HttpProvider('http://testnet:5000', {
     timeout: 120,
@@ -413,28 +569,46 @@ async function main() {
     ],
   })
 
-  // TODO : Fix update
-  const snapshotCount = await web3extend.evm.snapshot()
+  // 1. Run deposit scenarios,
+  //    case0 - Two deposit txs with committedDposit Tx between the two deposit Tx
+  //    case1 - Two deposit txs from different accounts
+  //    case2 - Two deposit txs from same acccount
+
   const snapshotBlockNUmber = await web3extend.eth.getBlockNumber()
-  logger.info(`Snapshot at ${snapshotCount} `)
+  await web3extend.evm.snapshot()
+  logger.info(`Snapshot at block ${snapshotBlockNUmber}`)
 
-  await issueCase1()
-
+  logger.info(`Case 0 - Start`)
+  await sleep(1000)
+  await Case0(web3)
   logger.info(
-    `Issue Case 1 complete - back to snapshot from ${await web3.eth.getBlockNumber()} to ${snapshotBlockNUmber}`,
+    `Case 0 complete - rollback to snapshot from ${await web3.eth.getBlockNumber()} to ${snapshotBlockNUmber}`,
   )
-  const rollBack = await web3extend.evm.revert(1)
-  logger.info(`Snapshot at ${rollBack} `)
+
+  // RollBack
+  const rollBack0 = await web3extend.evm.revert(1)
+  logger.info(`Reverted ? ${rollBack0}`)
+  await web3extend.evm.snapshot()
+  const snapshotBlockNUmber1 = await web3extend.eth.getBlockNumber()
+  logger.info(`Snapshot at block ${snapshotBlockNUmber1}`)
   logger.info(`Current block Number is ${await web3.eth.getBlockNumber()}`)
 
-  sleep(2000)
-  await issueCase2()
+  logger.info(`Case 1 - Start`)
+  await sleep(1000)
+  await Case1()
   logger.info(
-    `Issue Case 2 complete - back to snapshot from ${await web3.eth.getBlockNumber()}`,
+    `Case 1 complete - rollback to snapshot from ${await web3.eth.getBlockNumber()} to ${snapshotBlockNUmber1}`,
   )
-  const rollBack2 = await web3extend.evm.revert(0)
-  logger.info(`Snapshot at ${rollBack2} `)
+
+  // RollBack
+  const rollBack1 = await web3extend.evm.revert(1)
+  logger.info(`Reverted ? ${rollBack1}`)
   logger.info(`Current block Number is ${await web3.eth.getBlockNumber()}`)
+
+  logger.info(`Case 2 - Start`)
+  await sleep(1000)
+  await Case2()
+  logger.info(`Case 2 complete - End of issue reproduction`)
 }
 
 main()
