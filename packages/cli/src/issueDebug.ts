@@ -15,6 +15,7 @@ import { Coordinator } from '@zkopru/coordinator'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
 import { logStream, logger, sleep } from '@zkopru/utils'
 import prettier from 'pino-pretty'
+import { PayableTx } from '~contracts/contracts/types'
 
 // Config Params
 const testnet = 'ws://testnet:5000'
@@ -198,11 +199,16 @@ async function Case0(web3: Web3) {
     logger.error(err)
   }
 
+  node.layer1.coordinator.events.MassDepositCommit(md => {
+    logger.info('MassDeposit Committed >> ', md)
+  })
+
   // Wait coordinator's committedDeposit Tx
   logger.info("Wait for coordinator's commitDeposit Tx")
   const latestCoordinatorTxCount = await web3.eth.getTransactionCount(
     accounts[0].ethAddress,
   )
+
   for (let i = 0; i < 30; i++) {
     if (
       latestCoordinatorTxCount !==
@@ -365,12 +371,13 @@ async function Case1() {
       depositTx2,
       accounts[4].ethAccount,
       {
+        gasPrice: 20000000000,
+        gas: 400000,
         value: note2
           .eth()
           .add(fee)
           .toString(),
-        gasPrice: 20000000000,
-      },
+      } as PayableTx,
     )
     logger.info(
       `Receipt >>  ${util.inspect(receipt2, {
@@ -389,7 +396,7 @@ async function Case1() {
   coordinator.stop()
 }
 // @ts-ignore
-async function Case2() {
+async function Case2(web3: Web3) {
   logger.info('Case 2 - two deposit transactions from diffrent accounts')
   const { hdWallet, webSocketProvider } = await getProviders(
     testnet,
@@ -500,17 +507,21 @@ async function Case2() {
   const depositTx2 = await getDepositTx(wallet, note2, Fp.strictFrom(fee))
 
   logger.info(`Account ${accounts[5].ethAddress} sent deposit Tx`)
+
+  const txOption: PayableTx = {
+    gasPrice: 40000000000,
+    gas: 1000000,
+    value: note2
+      .eth()
+      .add(fee)
+      .toString(),
+  }
+
   try {
     const receipt2 = await wallet.node.layer1.sendTx(
       depositTx2,
       accounts[5].ethAccount,
-      {
-        value: note2
-          .eth()
-          .add(fee)
-          .toString(),
-        gasPrice: 40000000000,
-      },
+      txOption,
     )
     logger.info(
       `Receipt >>  ${util.inspect(receipt2, {
@@ -607,7 +618,7 @@ async function main() {
 
   logger.info(`Case 2 - Start`)
   await sleep(1000)
-  await Case2()
+  await Case2(web3)
   logger.info(`Case 2 complete - End of issue reproduction`)
 }
 

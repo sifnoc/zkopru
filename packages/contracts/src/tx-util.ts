@@ -29,10 +29,19 @@ export class TxUtil {
       web3.eth.getGasPrice(),
     ])
     const value = option ? (option as PayableTx).value : undefined
+
+    let forcedSetGas
+    if (option?.gas) {
+      forcedSetGas = option.gas
+    }
+    let forcedSetGasPrice
+    if (option?.gasPrice) {
+      forcedSetGasPrice = option.gasPrice
+    }
     const { rawTransaction } = await web3.eth.accounts.signTransaction(
       {
-        gasPrice,
-        gas,
+        gasPrice: forcedSetGasPrice ?? gasPrice,
+        gas: forcedSetGas ?? gas,
         to: address,
         value,
         data: tx.encodeABI(),
