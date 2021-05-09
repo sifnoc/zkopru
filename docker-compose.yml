@@ -2,22 +2,22 @@ version: '3'
 
 services:
   testnet:
+    ports:
+      - '8545:8545'
     build:
       context: ./packages/contracts/
-      dockerfile: ../../dockerfiles/Contract.dockerfile
+      dockerfile: ../../dockerfiles/Contract.geth.dockerfile
     ports:
       - '5000:5000'
     command: >
-      sh -c "npx hardhat node --hostname 0.0.0.0 --port 5000 &
-      sleep 5 &&
-      truffle migrate --network testnet &&
-      echo 'Finished Zkopru contract deployment.' &&
-      echo "Done" | nc -w0 coordinator 5354 &&
-      tail -f /dev/null"
+      geth init --datadir data genesis.json &&
+      geth account import testnet-key --password testnet-pass --datadir data &&
+      geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 1 --miner.gastarget 12000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --rpc.allow-unprotected-txs --http.api eth,net,web3,personal,miner --nousb &
+      truffle migrate --network develop  && sleep 1 && tail -f /dev/null
   coordinator:
     build:
       context: ./
-      dockerfile: ./dockerfiles/Coordinator.dockerfile
+      dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - '8888:8888'
     links:

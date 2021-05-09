@@ -24,7 +24,7 @@ EXPOSE 5000
 COPY ./keys /proj/keys
 COPY ./testnet-key /proj/testnet-key
 COPY ./testnet-pass /proj/testnet-pass
-RUN geth init --datadir data genesis.json && geth account import testnet-key --password testnet-pass --datadir data && geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 2 --miner.gastarget 12000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --http.api eth,net,web3,personal,miner --nousb & truffle migrate --network develop && sleep 1 && curl -H "Content-Type: application/json" -X POST --data '{"id":1337,"jsonrpc":"2.0","method":"miner_stop","params":[]}' http://localhost:8545 && pkill geth && sleep 5
+#RUN geth init --datadir data genesis.json && geth account import testnet-key --password testnet-pass --datadir data && geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 2 --miner.gastarget 14000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --http.api eth,net,web3,personal,miner --nousb & truffle migrate --network develop && sleep 1 
 CMD ["geth", "--dev", "--networkid", "20200406", "--datadir", "data", "--rpc", "--rpcaddr", "0.0.0.0", "--rpccorsdomain", "*","--http.api", "eth,net,web3,personal,miner", "--nousb"]
 # RUN geth export --datadir data geth-zkopru-exported.gz
 

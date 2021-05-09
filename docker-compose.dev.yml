@@ -11,7 +11,7 @@ services:
       geth init --datadir data &&
       geth account import testnet-key --password testnet-pass --datadir data &&
       geth import-preimage --datadir data zkopru_geth.db &&
-      geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 1 --miner.gastarget 12000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --http.api eth,net,web3,personal,miner --nousb
+      geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 1 --miner.gastarget 12000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --rpc.allow-unprotected-txs --http.api eth,net,web3,personal,miner --nousb
   testnet:
     ports:
       - '5000:5000'
