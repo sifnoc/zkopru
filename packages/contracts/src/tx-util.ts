@@ -48,6 +48,7 @@ export class TxUtil {
         gasPrice,
         gas,
         to: address,
+        nonce: (option?.nonce as number) ?? undefined,
         value,
         data: tx.encodeABI(),
       },
@@ -70,7 +71,25 @@ export class TxUtil {
       account,
       option,
     )
-    const receipt = await web3.eth.sendSignedTransaction(signedTx)
+    let receipt
+    try {
+      receipt = await web3.eth.sendSignedTransaction(signedTx)
+    } catch (err) {
+      if (err.toString().indexOf('nonce')) {
+        logger.info(`[TxUTil] Got nonce error, just one more try`)
+        const updateNonce = await web3.eth.getTransactionCount(account.address)
+        const signedTx = await this.getSignedTransaction(
+          tx,
+          address,
+          web3,
+          account,
+          { ...option, nonce: updateNonce + 1 },
+        )
+        receipt = await web3.eth.sendSignedTransaction(signedTx)
+      } else {
+        logger.error(`[TxUtil] Error ${err}`)
+      }
+    }
     if (option?.gas && !receipt?.status) {
       logger.info('Check gas amount for this transaction revert')
     }
