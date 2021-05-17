@@ -53,12 +53,8 @@ export class CoordinatorManager {
         fromBlock: currentBlock,
         toBlock: toBlock > latestBlock ? 'latest' : toBlock,
       })
-      logger.info(`[CM] 'loadUrls' - updates ${logAll(updates)}`)
       const promises = [] as Promise<any>[]
       for (const { returnValues } of updates) {
-        logger.info(
-          `[CM] Updated coordinator 'urlUpdate' ${logAll(returnValues)}`,
-        )
         if (
           this.urlsByAddress[returnValues.coordinator] ||
           loaded[returnValues.coordinator]
@@ -89,11 +85,9 @@ export class CoordinatorManager {
   }
 
   async activeCoordinatorUrl(): Promise<string | void> {
-    logger.info(`[CM] Process env in CoordinatorManger ${logAll(process.env)}`)
     const activeCoord = await this.activeCoordinator()
     const { DEFAULT_COORDINATOR } = process.env
     if (activeCoord === '0x0000000000000000000000000000000000000000') {
-      logger.info(`[CM] Could not read coordinator url`)
       const urls = await this.loadUrls()
       return urls[0] || DEFAULT_COORDINATOR
     }
@@ -113,7 +107,6 @@ export class CoordinatorManager {
     const urls = url.split(',')
     if (urls.length === 0) return
     for (const u of urls) {
-      logger.info(`[CM] coordinator url : ${u}`)
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
