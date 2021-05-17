@@ -99,7 +99,10 @@ export class CoordinatorManager {
     const urls = url.split(',')
     if (urls.length === 0) return
     for (const u of urls) {
+<<<<<<< HEAD
       logger.info(u)
+=======
+>>>>>>> chore: removed comments and make up code
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
