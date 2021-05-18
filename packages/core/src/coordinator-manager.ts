@@ -39,7 +39,7 @@ export class CoordinatorManager {
     const latestBlock = await this._web3.eth.getBlockNumber()
     const currentBlock = startBlock
     const loaded: { [key: string]: boolean } = {}
-    for (;;) {
+    for (; ;) {
       const toBlock = currentBlock + blockCount
       const updates = await burnAuction.getPastEvents('UrlUpdate', {
         fromBlock: currentBlock,
@@ -99,10 +99,7 @@ export class CoordinatorManager {
     const urls = url.split(',')
     if (urls.length === 0) return
     for (const u of urls) {
-<<<<<<< HEAD
       logger.info(u)
-=======
->>>>>>> chore: removed comments and make up code
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
