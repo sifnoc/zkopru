@@ -52,6 +52,7 @@ services:
       - 'coordinator'
     environment:
       - DEFAULT_COORDINATOR=http://172.30.1.3:8888
+      - ACCOUNT_IDX=2
     volumes:
       - /run/docker.sock:/run/docker.sock:ro
       - './packages:/proj/packages'
