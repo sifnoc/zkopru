@@ -3,7 +3,7 @@ import { FullNode } from '@zkopru/core'
 import { Coordinator } from '@zkopru/coordinator'
 import { logger } from '@zkopru/utils'
 import { config } from './config'
-import { getBase, getLocalIP, startLogger } from './baseGenerator'
+import { getBase, startLogger } from './baseGenerator'
 
 startLogger('COORDINATOR_LOG')
 
@@ -25,8 +25,7 @@ async function testCoodinator() {
     slasher: slaherAccount.ethAccount,
   })
 
-  // TODOMight possible error when modified `docker-compose` or `docker` configuration
-  const coordinatorIp = getLocalIP() // TODO: Get fency ip address get
+  const coordinatorIp = process.env.COORDINATOR_IP
 
   const coordinatorConfig = {
     bootstrap: true,
@@ -46,8 +45,6 @@ async function testCoodinator() {
   )
 
   await coordinator.start()
-
-  // TODO: Set context like integrated test
 }
 
 async function main() {
