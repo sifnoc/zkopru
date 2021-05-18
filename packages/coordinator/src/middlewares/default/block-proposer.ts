@@ -23,7 +23,7 @@ export class BlockProposer extends ProposerBase {
       where: {
         OR: [
           {
-            hash: blockHashes,
+            hash: blockHashes, e
             verified: true,
             isUncle: null,
           },
@@ -71,7 +71,7 @@ export class BlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       expectedGas += MAX_MASS_DEPOSIT_COMMIT_GAS + 1000000
-      logger.info(`Propose estimated gase ${expectedGas}`)
+      logger.debug(`Propose adjusted gas : ${expectedGas}`)
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       if (typeof err.toString === 'function') {
