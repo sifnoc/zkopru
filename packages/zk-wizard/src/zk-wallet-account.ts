@@ -628,13 +628,7 @@ export class ZkWalletAccount {
   }
 
   async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
-    logger.info(
-      `Coordinator Manger in ZkWalletAccount >> ${logAll(
-        this.coordinatorManager.urlsByAddress,
-      )}`,
-    )
     const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
-    logger.info(`coordinatorUrl >> ${coordinatorUrl}`)
     const response = await fetch(`${coordinatorUrl}/tx`, {
       method: 'post',
       body: zkTx.encode().toString('hex'),

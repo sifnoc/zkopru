@@ -1,5 +1,6 @@
 /* eslint-disable no-case-declarations */
 import BN from 'bn.js'
+import Web3 from 'web3'
 import { toWei } from 'web3-utils'
 
 import { FullNode } from '@zkopru/core'
@@ -8,6 +9,7 @@ import { logger, sleep } from '@zkopru/utils'
 import { ZkWallet } from '~zk-wizard'
 import { getBase, startLogger } from './baseGenerator'
 import { config } from './config'
+import { Layer1 } from '@zkopru/contracts'
 
 const account_idx: number = parseInt(process.env.ACCOUNT_IDX ?? '0')
 
@@ -24,6 +26,12 @@ async function testWallet() {
     config.mnemonic,
     'helloworld',
   )
+
+  let latestHeaderHash
+  const zkopru = Layer1.getZkopru(new Web3(webSocketProvider), config.zkopruContract)
+  latestHeaderHash = await zkopru.methods.latest().call()
+  logger.info(`Latest Block Hash : ${latestHeaderHash}`)
+
 
   const walletNode: FullNode = await FullNode.new({
     provider: webSocketProvider,
@@ -77,7 +85,7 @@ async function testWallet() {
   let unspentUTXO: Utxo[]
   let tx: RawTx
 
-  const weiPrice = toWei('2000', 'gwei') // TODO: make it flexible
+  const weiPrice = toWei('2000', 'gwei') // TODO: make it adjustable
 
   while (true) {
     unspentUTXO = await wallet.getUtxos(walletAccount, UtxoStatus.UNSPENT)
@@ -143,10 +151,8 @@ async function testWallet() {
     const UtxoCount = await Promise.all(statusPromise)
 
     logger.info(
-      `After send Tx UTXOs, 'unpent :  ${
-        UtxoCount[UtxoStatus.UNSPENT]
-      }', 'spending : ${UtxoCount[UtxoStatus.SPENDING]}', 'spent : ${
-        UtxoCount[UtxoStatus.SPENT]
+      `After send Tx UTXOs, 'unpent :  ${UtxoCount[UtxoStatus.UNSPENT]
+      }', 'spending : ${UtxoCount[UtxoStatus.SPENDING]}', 'spent : ${UtxoCount[UtxoStatus.SPENT]
       }'`,
     )
   }
