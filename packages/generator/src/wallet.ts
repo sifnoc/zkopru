@@ -9,13 +9,16 @@ import { ZkWallet } from '~zk-wizard'
 import { getBase, startLogger } from './baseGenerator'
 import { config } from './config'
 
+const account_idx: number = parseInt(process.env.ACCOUNT_IDX ?? '0')
+
 const eth: string = toWei('10000000000000000', 'wei')
-const fee: string = toWei('5000000000000000', 'wei')
+const fee: string = toWei('0.01')
 
 startLogger('./WALLET_LOG')
 
 async function testWallet() {
   logger.info('Wallet Initializing')
+  logger.info(`Wallet selected account index ${account_idx + 3}`)
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
     config.testnetUrl,
     config.mnemonic,
@@ -29,7 +32,8 @@ async function testWallet() {
     accounts: [],
   })
 
-  const walletAccount = await hdWallet.createAccount(4) // TODO: select from docker-compose config
+  // Assume that index 0, 1, 2 are reserved
+  const walletAccount = await hdWallet.createAccount(3 + account_idx) // TODO: select from docker-compose config
 
   const wallet = new ZkWallet({
     db: mockupDB,
@@ -71,12 +75,9 @@ async function testWallet() {
   let txBuilder: TxBuilder
   let spendables: Utxo[]
   let unspentUTXO: Utxo[]
-  let spendingUTXO: Utxo[]
-  let spentUTXO: Utxo[]
   let tx: RawTx
-  let Counter = 1
 
-  const weiPrice = toWei('4000', 'gwei') // TODO: make it flexible
+  const weiPrice = toWei('2000', 'gwei') // TODO: make it flexible
 
   while (true) {
     unspentUTXO = await wallet.getUtxos(walletAccount, UtxoStatus.UNSPENT)
@@ -99,15 +100,17 @@ async function testWallet() {
       continue
     }
 
+    // In this wallet only treat EthNote.
     spendables = await wallet.getSpendables(walletAccount)
 
     txBuilder = TxBuilder.from(walletAccount.zkAddress)
 
+    // TODO : Need strategy for filtering spendable note before going in txBuilder
     tx = txBuilder
-      .provide(...spendables.map(note => Utxo.from(note)))
+      .provide(...spendables.slice(0, 4).map(note => Utxo.from(note)))
       .weiPerByte(weiPrice)
       .sendEther({
-        eth: new BN(eth).div(new BN(2)),
+        eth: new BN(eth).div(new BN(100)),
         to: walletAccount.zkAddress,
       })
       .build()
@@ -120,22 +123,33 @@ async function testWallet() {
       })
     } catch (err) {
       logger.error(err)
-      logger.error(tx)
     }
 
-    // TODO: Make push at once, if this log necessary
-    spentUTXO = await wallet.getUtxos(walletAccount, UtxoStatus.SPENT)
-    unspentUTXO = await wallet.getUtxos(walletAccount, UtxoStatus.UNSPENT)
-    spendingUTXO = await wallet.getUtxos(walletAccount, UtxoStatus.SPENDING)
+    // Not verify utxo note, just Count for log
+    let statusPromise: Promise<number>[] = []
+
+    for (const status in UtxoStatus) {
+      if (status.length == 1) {
+        statusPromise.push(
+          wallet.db.count('Utxo', {
+            owner: [walletAccount.zkAddress.toString()],
+            status: parseInt(status),
+            usedAt: null,
+          }),
+        )
+      }
+    }
+
+    const UtxoCount = await Promise.all(statusPromise)
+
     logger.info(
-      `After send Tx UTXOs, 'unpent : ${unspentUTXO.length}', 'spending : ${spendingUTXO.length}', 'spent : ${spentUTXO.length}'`,
+      `After send Tx UTXOs, 'unpent :  ${
+        UtxoCount[UtxoStatus.UNSPENT]
+      }', 'spending : ${UtxoCount[UtxoStatus.SPENDING]}', 'spent : ${
+        UtxoCount[UtxoStatus.SPENT]
+      }'`,
     )
-    Counter += 1
   }
 }
 
-async function main() {
-  await testWallet()
-}
-
-main()
+testWallet()

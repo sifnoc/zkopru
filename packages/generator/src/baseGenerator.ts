@@ -7,10 +7,11 @@ import { Transform } from 'stream'
 import { networkInterfaces } from 'os'
 
 import { F } from '@zkopru/babyjubjub'
-import { Note } from '@zkopru/transaction'
-import { HDWallet } from '@zkopru/account'
+import { Note, UtxoStatus } from '@zkopru/transaction'
+import { HDWallet, ZkAccount } from '@zkopru/account'
 import { logStream } from '@zkopru/utils'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
+import { ZkWallet } from '~zk-wizard/zk-wallet'
 
 // helper functions
 export async function getBase(url: string, mnemonic: string, password: string) {
@@ -101,4 +102,16 @@ export function getLocalIP() {
     throw new Error(`eth0 does not detected`)
   }
   return result
+}
+
+// TODO: create get only UserNote
+export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
+  const unSpentUtxo = await wallet.db.findMany('Utxo', {
+    where: {
+      owner: [account.zkAddress.toString()],
+      status: UtxoStatus.UNSPENT,
+      usedAt: null,
+    },
+  })
+  return unSpentUtxo
 }
