@@ -3,7 +3,6 @@ RUN apt update
 RUN apt install -y git make musl-dev golang-go sqlite g++ tmux
 RUN mkdir -p /usr/share/man/man1
 RUN mkdir -p /usr/share/man/man7
-RUN apt install -y postgresql-client netcat
 
 # Configure Go
 ENV GOROOT /usr/lib/go

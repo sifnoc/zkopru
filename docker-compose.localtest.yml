@@ -17,8 +17,6 @@ services:
       dockerfile: ./dockerfiles/Cli.dockerfile
     ports:
       - '8888:8888'
-    volumes:
-      - './packages:/proj/packages'
     links:
       - 'testnet'
     networks:
