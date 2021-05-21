@@ -3,7 +3,7 @@ import { FullNode } from '@zkopru/core'
 import { Coordinator } from '@zkopru/coordinator'
 import { logger } from '@zkopru/utils'
 import { config } from './config'
-import { getBase, startLogger } from './baseGenerator'
+import { getBase, startLogger } from './utils'
 
 startLogger('COORDINATOR_LOG')
 

@@ -6,21 +6,21 @@ import { toWei } from 'web3-utils'
 import { FullNode } from '@zkopru/core'
 import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
 import { logger, sleep } from '@zkopru/utils'
-import { ZkWallet } from '~zk-wizard'
-import { getBase, startLogger } from './baseGenerator'
-import { config } from './config'
 import { Layer1 } from '@zkopru/contracts'
+import { ZkWallet } from '@zkopru/zk-wizard'
+import { getBase, startLogger } from './utils'
+import { config } from './config'
 
-const account_idx: number = parseInt(process.env.ACCOUNT_IDX ?? '0')
+const accountIdx: number = parseInt(process.env.ACCOUNT_IDX ?? '0')
 
-const eth: string = toWei('10000000000000000', 'wei')
+const eth: string = toWei('0.1')
 const fee: string = toWei('0.01')
 
 startLogger('./WALLET_LOG')
 
 async function testWallet() {
   logger.info('Wallet Initializing')
-  logger.info(`Wallet selected account index ${account_idx + 3}`)
+  logger.info(`Wallet selected account index ${accountIdx + 3}`)
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
     config.testnetUrl,
     config.mnemonic,
@@ -28,10 +28,12 @@ async function testWallet() {
   )
 
   let latestHeaderHash
-  const zkopru = Layer1.getZkopru(new Web3(webSocketProvider), config.zkopruContract)
+  const zkopru = Layer1.getZkopru(
+    new Web3(webSocketProvider),
+    config.zkopruContract,
+  )
   latestHeaderHash = await zkopru.methods.latest().call()
   logger.info(`Latest Block Hash : ${latestHeaderHash}`)
-
 
   const walletNode: FullNode = await FullNode.new({
     provider: webSocketProvider,
@@ -41,7 +43,7 @@ async function testWallet() {
   })
 
   // Assume that index 0, 1, 2 are reserved
-  const walletAccount = await hdWallet.createAccount(3 + account_idx) // TODO: select from docker-compose config
+  const walletAccount = await hdWallet.createAccount(3 + accountIdx) // TODO: select from docker-compose config
 
   const wallet = new ZkWallet({
     db: mockupDB,
@@ -50,7 +52,7 @@ async function testWallet() {
     accounts: [walletAccount],
     erc20: [],
     erc721: [],
-    snarkKeyPath: '/proj/packages/circuits/keys', // TODO: make more flexible
+    snarkKeyCid: config.snarkKeyCid
   })
 
   logger.info(`Wallet node start`)
@@ -72,7 +74,7 @@ async function testWallet() {
     } catch (err) {
       logger.error(err)
     }
-    await sleep(12000 + depositCounter * 1000)
+    await sleep(12000 + depositCounter * 1000) // Make it slower to give time for coordinator worker
 
     if (wallet.node.synchronizer.latestProcessed) break
 
@@ -134,7 +136,7 @@ async function testWallet() {
     }
 
     // Not verify utxo note, just Count for log
-    let statusPromise: Promise<number>[] = []
+    const statusPromise: Promise<number>[] = []
 
     for (const status in UtxoStatus) {
       if (status.length == 1) {

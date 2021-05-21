@@ -4,5 +4,5 @@ export const config = {
   zkopruContract: '0x970e8f18ebfEa0B08810f33a5A40438b9530FBCF',
   testnetUrl: `ws://testnet:5000`,
   networkId: 20200406,
-  chainId: 1,
+  snarkKeyCid: "/ipfs/QmWdQnPVdbS61ERWJY76xfkbzrLDiQptE81LRTQUupSP7G"
 }
