@@ -43,6 +43,7 @@ async function runGenerator() {
     erc20: [],
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
+    ID: accountIdx
   }
 
   const generator = new TransferGenerator(transferGeneratorConfig)

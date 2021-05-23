@@ -1,5 +1,6 @@
 import BN from 'bn.js'
 import { toWei } from 'web3-utils'
+import { Queue, Worker } from 'bullmq'
 
 import { DB } from '@zkopru/database'
 import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
@@ -23,9 +24,12 @@ export interface GeneratorConfig {
   noteAmount?: noteAmount
   maxInflowNote?: number // Can be extend to 4
   weiPrice?: string
+  ID?: number
 }
 
 export class TransferGenerator extends ZkWalletAccount {
+  ID: number
+
   private hdWallet: HDWallet
 
   wallet: ZkWallet
@@ -44,8 +48,13 @@ export class TransferGenerator extends ZkWalletAccount {
 
   weiPrice: string
 
+  queue: Queue
+
+  worker: Worker | undefined
+
   constructor(config: ZkWalletAccountConfig & GeneratorConfig) {
     super(config)
+    this.ID = config.ID ?? Math.floor(Math.random() * 10000) // TODO : It seems only need in docker environment
     this.activating = false
     this.txCount = 0
 
@@ -70,8 +79,12 @@ export class TransferGenerator extends ZkWalletAccount {
     this.onQueueUTXOSalt = []
     this.maxInflowNote = config.maxInflowNote ?? 2 // If set 1 It will increasing notes
     this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
-  }
 
+    // TODO : check activate redis server 
+    this.queue = new Queue(`wallt_${this.ID ?? 0}`, {
+      connection: { host: 'redis', port: 6379 },
+    })
+  }
 
   setMaxInflow(inflowLength: number) {
     if (inflowLength > 4) {
@@ -92,6 +105,7 @@ export class TransferGenerator extends ZkWalletAccount {
     let tx: RawTx
     let sendableUtxo: Utxo[]
     let stagedUtxo
+    let zkTxCount: number = 0
 
     while (this.activating) {
       this.unspentUTXO = await this.wallet.getUtxos(
@@ -142,6 +156,8 @@ export class TransferGenerator extends ZkWalletAccount {
         }
       }
 
+      // TODO : Create Tx then goto queue
+
       if (sendableUtxo) {
         const txBuilder = TxBuilder.from(this.account?.zkAddress!)
         tx = txBuilder
@@ -153,21 +169,43 @@ export class TransferGenerator extends ZkWalletAccount {
           })
           .build()
 
-        try {
-          await this.wallet.sendTx({
-            tx,
-            from: this.account,
-            encryptTo: this.account?.zkAddress,
-          })
-          sendableUtxo.forEach(utxo => {
-            this.onQueueUTXOSalt.push(utxo.salt)
-          })
-          this.txCount += 1
-        } catch (err) {
-          logger.error(err)
+        const zkTx = await this.wizard.shield({
+          tx,
+          from: this.account!,
+          encryptTo: this.account?.zkAddress,
+        })
+        const snarkValid = await this.node.layer2.snarkVerifier.verifyTx(zkTx)
+        if (!snarkValid) {
+          throw new Error('Generated snark proof is invalid')
+        } else {
+          // TODO : add sendable UTXO 
+          // 
+          this.queue.add(`zkTx-${zkTxCount}`, zkTx)
+          zkTxCount++
         }
       }
     }
+  }
+
+  async startWorker() {
+    if (this.worker != undefined) {
+      this.worker = new Worker(`walelt_${this.ID}`, async job => {
+        logger.info(`Worker job ${logAll(job)}`)
+      })
+
+      this.worker.on('completed', (job) => {
+        console.log(`${job.id} has completed!`)
+      })
+    } else {
+      logger.info(`Worker is running i guess`)
+    }
+
+  }
+
+  async stopWorker() {
+    await this.queue.pause()
+    const attachedWorker = await this.queue.getWorkers()
+    logger.info(`Stop queue, Current attached worker ${attachedWorker}`)
   }
 
   stopGenerator() {
