@@ -72,6 +72,16 @@ export class TransferGenerator extends ZkWalletAccount {
     this.lastSalt = Fp.from(1)
   }
 
+
+  setMaxInflow(inflowLength: number) {
+    if (inflowLength > 4) {
+      throw new Error(`Not allowed more than 4 inflows, circuit not support`)
+    } else {
+      this.maxInflowNote = inflowLength
+      logger.info(`Now Set Max Inflow at ${this.maxInflowNote}`)
+    }
+  }
+
   async startGenerator() {
     if (!this.node.isRunning()) {
       this.node.start()
