@@ -50,7 +50,8 @@ async function runGenerator() {
   logger.info(`Wallet node start`)
 
   logger.info(`Start Generate Tansaction`)
-  await generator.startGenerator()
+  generator.startGenerator()
+  await generator.checkQueue()
 
   // setTimeout(async () => {
   //   logger.info('Stop Generator')

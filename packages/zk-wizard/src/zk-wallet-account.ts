@@ -266,7 +266,7 @@ export class ZkWalletAccount {
     return []
   }
 
-  async depositEther(eth: F, fee: F, to?: ZkAddress): Promise<boolean> {
+  async depositEther(eth: F, fee: F, salt?: F, to?: ZkAddress): Promise<boolean> {
     if (!this.account) {
       logger.error('Account is not set')
       return false
@@ -280,6 +280,7 @@ export class ZkWalletAccount {
     }
     const note = Utxo.newEtherNote({
       eth,
+      salt,
       owner: to || this.account.zkAddress,
     })
     const result = await this.deposit(note, Fp.strictFrom(fee))
@@ -293,11 +294,11 @@ export class ZkWalletAccount {
   ):
     | boolean
     | {
-        to: string
-        data: any
-        value: string
-        onComplete: () => Promise<any>
-      } {
+      to: string
+      data: any
+      value: string
+      onComplete: () => Promise<any>
+    } {
     if (!this.account) {
       logger.error('Account is not set')
       return false

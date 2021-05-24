@@ -1,65 +1,42 @@
-import { Fp, F } from '@zkopru/babyjubjub'
-import { txSizeCalculator, logger } from '@zkopru/utils'
-import { fromWei } from 'web3-utils'
 import assert from 'assert'
+import { fromWei } from 'web3-utils'
 import { Address } from 'soltypes'
-import { ZkAddress } from './zk-address'
-import { Utxo } from './utxo'
-import { Sum } from './note-sum'
-import { Outflow } from './outflow'
-import { Withdrawal } from './withdrawal'
-import { Migration } from './migration'
-import { OutflowType } from './note'
-import { RawTx } from './raw-tx'
 
-export class TxBuilder {
-  spendables: Utxo[]
+import { F, Fp } from '@zkopru/babyjubjub'
+import { TxBuilder, Utxo, RawTx, ZkAddress, Sum, Withdrawal, Migration, OutflowType } from '@zkopru/transaction'
+import { logger } from '@zkopru/utils'
+import { txSizeCalculator } from '@zkopru/utils'
 
-  sendings: Outflow[]
+// TODO : Specified Salt logic 
+// Current first salt than split 2, 2n, 2n + 1
 
-  feePerByte: Fp
-
-  swap?: Fp
-
-  changeTo: ZkAddress
+export class TestTxBuilder extends TxBuilder {
+  // This class can specifiy salt of transaction for testing
+  // lastSalt: Fp
 
   constructor(owner: ZkAddress) {
-    this.spendables = []
-    this.sendings = []
-    this.changeTo = owner
-    this.feePerByte = Fp.zero
+    super(owner)
   }
 
-  static from(owner: ZkAddress): TxBuilder {
-    return new TxBuilder(owner)
-  }
-
-  weiPerByte(val: F): TxBuilder {
+  weiPerByte(val: F): TestTxBuilder {
     this.feePerByte = Fp.from(val)
     return this
   }
 
-  provide(...utxos: Utxo[]): TxBuilder {
+  provide(...utxos: Utxo[]): TestTxBuilder {
     utxos.forEach(utxo => this.spendables.push(utxo))
     return this
   }
 
-  /**
-   * This will throw underflow Error when it does not have enough ETH for fee
-   */
-  spendable(): Sum {
-    const asset = Sum.from(this.spendables)
-    // asset.eth = asset.eth.sub(this.weiPerByte)
-    return asset
-  }
-
   sendEther({
     eth,
+    salt,
     to,
     withdrawal,
     migration,
   }: {
     eth: F
+    salt: F
     to: ZkAddress
     withdrawal?: {
       to: F
@@ -69,74 +46,12 @@ export class TxBuilder {
       to: F
       fee: F
     }
-  }): TxBuilder {
+  }): TestTxBuilder {
     if (withdrawal && migration)
       throw Error(
         'You should have only one value of withdrawalTo or migrationTo',
       )
-    const note = Utxo.newEtherNote({ eth, owner: to })
-    this.send(note, withdrawal, migration)
-    return this
-  }
-
-  sendERC20({
-    tokenAddr,
-    erc20Amount,
-    to,
-    eth,
-    withdrawal,
-    migration,
-  }: {
-    tokenAddr: F
-    erc20Amount: F
-    to: ZkAddress
-    eth?: F
-    withdrawal?: {
-      to: F
-      fee: F
-    }
-    migration?: {
-      to: F
-      fee: F
-    }
-  }): TxBuilder {
-    const note = Utxo.newERC20Note({
-      eth: eth || 0,
-      tokenAddr,
-      erc20Amount,
-      owner: to,
-    })
-    this.send(note, withdrawal, migration)
-    return this
-  }
-
-  sendNFT({
-    tokenAddr,
-    nft,
-    to,
-    eth,
-    withdrawal,
-    migration,
-  }: {
-    tokenAddr: F
-    nft: F
-    to: ZkAddress
-    eth?: F
-    withdrawal?: {
-      to: F
-      fee: F
-    }
-    migration?: {
-      to: F
-      fee: F
-    }
-  }): TxBuilder {
-    const note = Utxo.newNFTNote({
-      eth: eth || 0,
-      tokenAddr,
-      nft,
-      owner: to,
-    })
+    const note = Utxo.newEtherNote({ eth, salt, owner: to })
     this.send(note, withdrawal, migration)
     return this
   }
@@ -294,8 +209,9 @@ export class TxBuilder {
     assert(spendingAmount().eth.gte(getRequiredETH()), 'not enough eth')
     const changeETH = spendingAmount().eth.sub(getRequiredETH())
     const finalFee = getTxFee()
+    const nextSalt = spendings[0].salt.add(new Fp(1))
     if (!changeETH.isZero()) {
-      changes.push(Utxo.newEtherNote({ eth: changeETH, owner: this.changeTo }))
+      changes.push(Utxo.newEtherNote({ eth: changeETH, salt: nextSalt, owner: this.changeTo }))
     }
 
     const inflow = [...spendings]
@@ -329,23 +245,5 @@ export class TxBuilder {
     }
   }
 
-  protected send(
-    note: Outflow,
-    withdrawal?: {
-      to: F
-      fee: F
-    },
-    migration?: {
-      to: F
-      fee: F
-    },
-  ) {
-    if (withdrawal) {
-      this.sendings.push(Withdrawal.from(note, withdrawal.to, withdrawal.fee))
-    } else if (migration) {
-      this.sendings.push(Migration.from(note, migration.to, migration.fee))
-    } else {
-      this.sendings.push(note)
-    }
-  }
+
 }
