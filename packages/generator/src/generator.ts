@@ -127,35 +127,35 @@ export class TransferGenerator extends ZkWalletAccount {
     let stagedUtxo
     let zkTxCount: number = 0
 
+    logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
+    try {
+      const result = await this.depositEther(
+        this.noteAmount.eth,
+        this.noteAmount.fee,
+        this.lastSalt,
+        this.account?.zkAddress,
+      )
+      if (!result) {
+        throw new Error(' Deposit Transaction Failed!')
+      }
+    } catch (err) {
+      logger.error(err)
+    }
+
     while (this.activating) {
       this.unspentUTXO = await this.getUtxos(
         this.account,
         UtxoStatus.UNSPENT,
       )
-      // TODO : pregenerate idea 
 
       // Deposit if does not exist unspent utxo in this wallet
       if (this.unspentUTXO.length === 0) {
-        logger.info('No Spendable Utxo, send Deposit Tx')
-        logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
-        try {
-          const result = await this.depositEther(
-            this.noteAmount.eth,
-            this.noteAmount.fee,
-            this.lastSalt,
-            this.account?.zkAddress,
-          )
-          if (!result) {
-            throw new Error('[Wallet] Deposit Transaction Failed!')
-          } else {
-            this.lastSalt = this.lastSalt.add(new Fp(1000000))
-          }
-        } catch (err) {
-          logger.error(err)
-        }
+        logger.info('No Spendable Utxo, wait until available')
         await sleep(10000)
         continue
       }
+
+      logger.info(`Sending zk Tx ...`)
 
       // generate transfer Tx...
       // All transaction are self transaction with same amount, only unique things is salt.

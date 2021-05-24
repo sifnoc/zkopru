@@ -209,7 +209,7 @@ export class TestTxBuilder extends TxBuilder {
     assert(spendingAmount().eth.gte(getRequiredETH()), 'not enough eth')
     const changeETH = spendingAmount().eth.sub(getRequiredETH())
     const finalFee = getTxFee()
-    const nextSalt = spendings[0].salt.add(new Fp(1))
+    const nextSalt = this.sendings[0].salt.add(new Fp(1))
     if (!changeETH.isZero()) {
       changes.push(Utxo.newEtherNote({ eth: changeETH, salt: nextSalt, owner: this.changeTo }))
     }
@@ -244,6 +244,4 @@ export class TestTxBuilder extends TxBuilder {
       fee: finalFee,
     }
   }
-
-
 }

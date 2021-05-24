@@ -39,7 +39,7 @@ async function runGenerator() {
     db: mockupDB,
     account: walletAccount,
     node: walletNode,
-    noteAmount: { eth: toWei('0.1'), fee: toWei('0.01') },
+    noteAmount: { eth: toWei('50'), fee: toWei('0.01') },
     erc20: [],
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
