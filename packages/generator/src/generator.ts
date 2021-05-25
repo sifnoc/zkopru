@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // import fs from 'fs'
 import BN from 'bn.js'
 import { toWei } from 'web3-utils'
@@ -11,22 +10,6 @@ import { logger, sleep } from '@zkopru/utils'
 import { ZkWalletAccount, ZkWalletAccountConfig } from '@zkopru/zk-wizard'
 import { TestTxBuilder } from './testbuilder'
 import { jsonToZkTx, logAll } from './generator-utils'
-=======
-import BN from 'bn.js'
-import { toWei } from 'web3-utils'
-
-import { DB } from '@zkopru/database'
-import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
-import { HDWallet, ZkAccount } from '@zkopru/account'
-import { logger, sleep } from '@zkopru/utils'
-import { F } from '~babyjubjub/fp'
-import { ZkWallet } from '~zk-wizard'
-import {
-  ZkWalletAccount,
-  ZkWalletAccountConfig,
-} from '~zk-wizard/zk-wallet-account'
-import { logAll } from './generator-utils'
->>>>>>> refactor: create generator class for eth transfer on layer2
 
 // TODO : extends to other type of assets
 export type noteAmount = { eth: string; fee: string }
@@ -36,7 +19,6 @@ export interface GeneratorConfig {
   hdWallet: HDWallet
   account: ZkAccount
   noteAmount?: noteAmount
-<<<<<<< HEAD
   weiPrice?: string
   ID?: number
 }
@@ -47,26 +29,10 @@ export class TransferGenerator extends ZkWalletAccount {
 
   activating: boolean
 
-=======
-  maxInflowNote?: number // Can be extend to 4
-  weiPrice?: string
-}
-
-export class TransferGenerator extends ZkWalletAccount {
-  private hdWallet: HDWallet
-
-  wallet: ZkWallet
-
-  activating: boolean
-
-  txCount: number
-
->>>>>>> refactor: create generator class for eth transfer on layer2
   noteAmount: noteAmount
 
   unspentUTXO: Utxo[]
 
-<<<<<<< HEAD
   onQueueUTXOSalt: number[]
 
   weiPrice: string
@@ -81,39 +47,12 @@ export class TransferGenerator extends ZkWalletAccount {
     super(config)
     this.ID = config.ID ?? Math.floor(Math.random() * 10000) // TODO : It seems only need in docker environment
     this.activating = false
-=======
-  onQueueUTXOSalt: F[]
-
-  maxInflowNote: number // Can be extend up to 4, over 4 will be error.
-
-  weiPrice: string
-
-  constructor(config: ZkWalletAccountConfig & GeneratorConfig) {
-    super(config)
-    this.activating = false
-    this.txCount = 0
-
-    this.hdWallet = config.hdWallet
-
-    // TODO: More base generator can be added erc20 or erc721
-    this.wallet = new ZkWallet({
-      db: config.db,
-      wallet: this.hdWallet,
-      node: this.node,
-      account: config.account,
-      accounts: [config.account],
-      erc20: [],
-      erc721: [],
-      snarkKeyPath: config.snarkKeyPath,
-    })
->>>>>>> refactor: create generator class for eth transfer on layer2
     this.noteAmount = config.noteAmount ?? {
       eth: toWei('0.1'),
       fee: toWei('0.01'),
     }
     this.unspentUTXO = []
     this.onQueueUTXOSalt = []
-<<<<<<< HEAD
     this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
     this.usePreZkTx = false
 
@@ -131,10 +70,6 @@ export class TransferGenerator extends ZkWalletAccount {
              7 ...
     */
     this.lastSalt = Fp.from(1)
-=======
-    this.maxInflowNote = config.maxInflowNote ?? 2 // If set 1 It will increasing notes
-    this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
->>>>>>> refactor: create generator class for eth transfer on layer2
   }
 
   async startGenerator() {
@@ -142,7 +77,6 @@ export class TransferGenerator extends ZkWalletAccount {
       this.node.start()
     }
 
-<<<<<<< HEAD
     // let tx: RawTx
 
     logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
@@ -169,44 +103,12 @@ export class TransferGenerator extends ZkWalletAccount {
       // Deposit if does not exist unspent utxo in this wallet
       if (this.unspentUTXO.length === 0) {
         logger.info('No Spendable Utxo, wait until available')
-=======
-    this.activating = true
-
-    let tx: RawTx
-    let sendableUtxo: Utxo[]
-    let stagedUtxo
-
-    while (this.activating) {
-      this.unspentUTXO = await this.wallet.getUtxos(
-        this.account,
-        UtxoStatus.UNSPENT,
-      )
-
-      // Dequeue necessary?
-
-      // Deposit if does not exist unspent utxo in this wallet
-      if (this.unspentUTXO.length === 0) {
-        logger.info('No Spendable Utxo, send Deposit Tx')
-        try {
-          const result = await this.wallet.depositEther(
-            this.noteAmount.eth,
-            this.noteAmount.fee,
-            this.account?.zkAddress,
-          )
-          if (!result) {
-            throw new Error('[Wallet] Deposit Transaction Failed!')
-          }
-        } catch (err) {
-          logger.error(err)
-        }
->>>>>>> refactor: create generator class for eth transfer on layer2
         await sleep(10000)
         continue
       }
 
       // generate transfer Tx...
       // All transaction are self transaction with same amount, only unique things is salt.
-<<<<<<< HEAD
       const sendableUtxo: Utxo[] = []
       let stagedUtxo
 
@@ -223,29 +125,10 @@ export class TransferGenerator extends ZkWalletAccount {
           sendableUtxo.push(stagedUtxo) // last utxo always in
         }
         if (sendableUtxo.length >= 1) {
-=======
-      sendableUtxo = []
-
-      for (const utxo of this.unspentUTXO) {
-        stagedUtxo = utxo
-        for (let i = 0; i < this.onQueueUTXOSalt.length; i++) {
-          if (this.onQueueUTXOSalt[i] == utxo.salt) {
-            stagedUtxo = null
-            break
-          }
-        }
-        if (stagedUtxo) {
-          sendableUtxo.push(stagedUtxo) // last utxo always in
-        }
-        // No need to be find all unspent utxo
-        if (sendableUtxo.length > this.maxInflowNote) {
-          logger.info(`sendable UTXO salts are ${logAll(sendableUtxo)}`)
->>>>>>> refactor: create generator class for eth transfer on layer2
           break
         }
       }
 
-<<<<<<< HEAD
       // TODO : Create Tx then goto queue
       if (sendableUtxo.length > 0 && this.usePreZkTx) {
         logger.info(
@@ -310,20 +193,10 @@ export class TransferGenerator extends ZkWalletAccount {
           .sendEther({
             eth: Sum.from(sendableUtxo).eth.div(new BN(2)),
             salt: sendableUtxo[0].salt.muln(2),
-=======
-      if (sendableUtxo) {
-        const txBuilder = TxBuilder.from(this.account?.zkAddress!)
-        tx = txBuilder
-          .provide(...sendableUtxo)
-          .weiPerByte(this.weiPrice)
-          .sendEther({
-            eth: new BN(this.noteAmount.eth).div(new BN(100)),
->>>>>>> refactor: create generator class for eth transfer on layer2
             to: this.account?.zkAddress!,
           })
           .build()
 
-<<<<<<< HEAD
         const parsedZkTx = {
           inflow: tx.inflow.map(flow => {
             return {
@@ -344,16 +217,11 @@ export class TransferGenerator extends ZkWalletAccount {
         logger.info(`Generated zkTx ${logAll(parsedZkTx)}`)
         try {
           await this.sendTx({
-=======
-        try {
-          await this.wallet.sendTx({
->>>>>>> refactor: create generator class for eth transfer on layer2
             tx,
             from: this.account,
             encryptTo: this.account?.zkAddress,
           })
           sendableUtxo.forEach(utxo => {
-<<<<<<< HEAD
             this.onQueueUTXOSalt.push(utxo.salt.toNumber())
           })
         } catch (err) {
@@ -364,15 +232,6 @@ export class TransferGenerator extends ZkWalletAccount {
         logger.info(`Waiting...`)
       }
       await sleep(1000)
-=======
-            this.onQueueUTXOSalt.push(utxo.salt)
-          })
-          this.txCount += 1
-        } catch (err) {
-          logger.error(err)
-        }
-      }
->>>>>>> refactor: create generator class for eth transfer on layer2
     }
   }
 
