@@ -184,6 +184,7 @@ export class TestTxBuilder extends TxBuilder {
 
     // Spend ETH containing notes until it hits the number
     spendables.sort((a, b) => (a.eth().gt(b.eth()) ? -1 : 1))
+    logger.info(`spendables ${spendables.length}, spendings ${spendings.length}`)
     while (getRequiredETH().gte(Sum.from(spendings).eth)) {
       logger.info(`required eth: ${getRequiredETH().toString()}`)
       logger.info(`spending eth: ${Sum.from(spendings).eth}`)

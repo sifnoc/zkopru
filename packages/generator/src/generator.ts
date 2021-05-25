@@ -4,7 +4,7 @@ import { Queue, Worker } from 'bullmq'
 
 import { F, Fp } from '@zkopru/babyjubjub'
 import { DB } from '@zkopru/database'
-import { UtxoStatus, Utxo, RawTx, ZkAddress } from '@zkopru/transaction'
+import { Sum, UtxoStatus, Utxo, RawTx, ZkAddress } from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { logger, sleep } from '@zkopru/utils'
 import {
@@ -182,18 +182,27 @@ export class TransferGenerator extends ZkWalletAccount {
       // TODO : Make it Always 1 Inflow 2 Outflow
       if (sendableUtxo) {
         logger.info(`sendable UTXO salts are ${logAll(sendableUtxo.map(utxo => utxo.salt.toString()))}`)
+
         const testTxBuilder = new TestTxBuilder(this.account?.zkAddress!)
         tx = testTxBuilder
           .provide(...sendableUtxo)
           .weiPerByte(this.weiPrice)
           .sendEther({
-            eth: new BN(this.noteAmount.eth).div(new BN(2)),
+            eth: Sum.from(sendableUtxo).eth.div(new BN(2)),
             salt: sendableUtxo[0].salt.muln(2),
             to: this.account?.zkAddress!,
           })
           .build()
 
-        logger.info(`Generated zkTx ${logAll(tx)}`)
+
+        const parsedZkTx = {
+          inflow: tx.inflow.map(flow => {
+            return { salt: flow.salt.toString(10), eth: flow.eth().toString(10) }
+          }), outflow: tx.outflow.map(flow => {
+            return { salt: flow.salt.toString(10), eth: flow.eth().toString(10) }
+          })
+        }
+        logger.info(`Generated zkTx ${logAll(parsedZkTx)}`)
         try {
           // await this.wallet.sendTx({
           await this.sendTxsave({
