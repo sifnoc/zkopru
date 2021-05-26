@@ -54,6 +54,11 @@ services:
       - 'wallet'
     ports:
       - '8080:8080'
+<<<<<<< HEAD
+=======
+    environment:
+      - DEFAULT_COORDINATOR=http://172.30.1.3:8888
+>>>>>>> feat: create TestBlockProposer class
     volumes:
       - './packages:/proj/packages'
     depends_on:

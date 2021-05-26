@@ -1,11 +1,25 @@
 import BN from 'bn.js'
+import fetch from 'node-fetch'
 import { toWei } from 'web3-utils'
+import { TransactionReceipt } from 'web3-core'
 
+<<<<<<< HEAD
 import { F, Fp } from '@zkopru/babyjubjub'
 import { DB } from '@zkopru/database'
 import { Sum, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { logger, sleep } from '@zkopru/utils'
+=======
+import { F } from '@zkopru/babyjubjub'
+import { DB } from '@zkopru/database'
+import { Block, serializeBody, serializeHeader } from '@zkopru/core'
+import { TxBuilder, UtxoStatus, Utxo, RawTx } from '@zkopru/transaction'
+import { HDWallet, ZkAccount } from '@zkopru/account'
+import { logger, sleep } from '@zkopru/utils'
+import { ProposerBase } from '@zkopru/coordinator'
+import { CoordinatorContext } from '~coordinator/context'
+import { ZkWallet } from '~zk-wizard'
+>>>>>>> feat: create TestBlockProposer class
 import {
   ZkWalletAccount,
   ZkWalletAccountConfig,
@@ -26,7 +40,102 @@ export interface GeneratorConfig {
   ID?: number
 }
 
+<<<<<<< HEAD
 //* * Only ETH transafer zkTx generator as 1 inflow 2 outflows */
+=======
+export class TestBlockProposer extends ProposerBase {
+  lastProposed: string
+  proposedNum: number
+
+  constructor(context: CoordinatorContext) {
+    super(context)
+    this.lastProposed = '0xd1e363805bd72496bc8655758c5e3ef06482a0fa7fa64779d67663bd5f4ff73b' // genesis hash
+    this.proposedNum = 0
+  }
+
+  protected async handleProcessedBlock(
+    block: Block,
+  ): Promise<TransactionReceipt | undefined> {
+    if (!this.context.gasPrice) {
+      throw Error('coordinator.js: Gas price is not synced')
+    }
+    const { layer1, layer2 } = this.context.node
+    const blocks = await layer2.db.findMany('Header', {
+      where: {
+        parentBlock: block.header.parentBlock.toString(),
+      },
+    })
+    const blockHashes = blocks.map(({ hash }) => hash)
+    const siblingProposals = await layer2.db.findMany('Proposal', {
+      where: {
+        OR: [
+          {
+            hash: blockHashes,
+            verified: true,
+            isUncle: null,
+          },
+          {
+            hash: block.hash.toString(),
+          },
+        ],
+      },
+    })
+    if (siblingProposals.length > 0) {
+      logger.info(`Already proposed for the given parent block`)
+      return undefined
+    }
+
+    const bytes = Buffer.concat([
+      serializeHeader(block.header),
+      serializeBody(block.body),
+    ])
+    const blockData = `0x${bytes.toString('hex')}`
+    const proposeTx = layer1.coordinator.methods.propose(blockData)
+    let expectedGas: number
+    try {
+      expectedGas = await proposeTx.estimateGas({
+        from: this.context.account.address,
+      })
+      logger.info(`Propose estimated gas ${expectedGas}`)
+      expectedGas = Math.floor(expectedGas * 1.5)
+      logger.info(`Make it 50% extra then floor gas ${expectedGas}`)
+    } catch (err) {
+      logger.warn(`propose() fails. Skip gen block`)
+      return undefined
+    }
+    const expectedFee = this.context.gasPrice.muln(expectedGas)
+    if (block.header.fee.toBN().lte(expectedFee)) {
+      logger.info(
+        `Skip gen block. Aggregated fee is not enough yet ${block.header.fee} / ${expectedFee}`,
+      )
+      return undefined
+    }
+    const receipt = await layer1.sendTx(proposeTx, this.context.account, {
+      gas: expectedGas,
+      gasPrice: this.context.gasPrice.toString(),
+    })
+    if (receipt) {
+      // Additional code for Observattion over `BlockProposer` class
+      if (this.lastProposed != block.hash.toString()) {
+        const response = await fetch(`http://organizer:8080/propose`, {
+          method: 'post',
+          body: JSON.stringify({ timestamp: Date.now(), proposed: this.proposedNum, txcount: block.body.txs.length }),
+        })
+        if (response.status !== 200) {
+          logger.warn(`Organizer well not received : ${await response.text()}`)
+        }
+        this.lastProposed = block.hash.toString()
+        this.proposedNum += 1
+      }
+      logger.info(`Proposed a new block: ${block.hash.toString()}`)
+    } else {
+      logger.warn(`Failed to propose a new block: ${block.hash.toString()}`)
+    }
+    return receipt
+  }
+}
+
+>>>>>>> feat: create TestBlockProposer class
 export class TransferGenerator extends ZkWalletAccount {
   ID: number
 
@@ -182,6 +291,7 @@ export class TransferGenerator extends ZkWalletAccount {
           })
           sendableUtxo.forEach(utxo => {
             this.onQueueUTXOSalt.push(utxo.salt)
+
           })
         } catch (err) {
           logger.error(err)
