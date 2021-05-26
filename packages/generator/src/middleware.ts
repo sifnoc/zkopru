@@ -3,8 +3,7 @@ import { TransactionReceipt } from 'web3-core'
 
 import { Block, serializeBody, serializeHeader } from '@zkopru/core'
 import { logger } from '@zkopru/utils'
-import { ProposerBase } from '~coordinator'
-import { CoordinatorContext } from '~coordinator/context'
+import { ProposerBase, CoordinatorContext } from '@zkopru/coordinator'
 import { config } from './config'
 
 // TODO: implement metric
