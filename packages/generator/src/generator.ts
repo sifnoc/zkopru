@@ -97,6 +97,21 @@ export class TransferGenerator extends ZkWalletAccount {
     }
     // let currentUtxo
 
+    logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
+    try {
+      const result = await this.depositEther(
+        this.noteAmount.eth,
+        this.noteAmount.fee,
+        this.account?.zkAddress,
+        this.lastSalt,
+      )
+      if (!result) {
+        throw new Error(' Deposit Transaction Failed!')
+      }
+    } catch (err) {
+      logger.error(err)
+    }
+
     while (this.activating) {
       this.unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
 
