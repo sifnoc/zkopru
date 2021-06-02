@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  testnet:
+    ports:
+      - '8545:8545'
+    build:
+      context: ./packages/contracts/
+      dockerfile: ../../dockerfiles/Contract.geth.dockerfile
+    ports:
+      - '5000:5000'
+    command: >
+      geth init --datadir data genesis.json &&
+      geth account import testnet-key --password testnet-pass --datadir data &&
+      geth --maxpeers 0 --fakepow --mine --miner.gasprice 1 --miner.threads 1 --miner.gastarget 12000000 --networkid 20200406 --datadir data --rpc --rpcaddr "0.0.0.0" --rpccorsdomain "*" --rpc.allow-unprotected-txs --http.api eth,net,web3,personal,miner --nousb &
+      truffle migrate --network develop  && sleep 1 && nc -w0 coordinator 5354 && tail -f /dev/null
+  coordinator:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    ports:
+      - '8888:8888'
+    links:
+      - 'testnet:testnet'
+    depends_on:
+      - 'testnet'
+    environment:
+      TARGET_HOST: 'testnet'
+    command: >
+      bash -c "nc -l -p 5354 &&
+      nc -w0 wallet 5354 &&
+      bash wait_deploy_contracts.sh &&
+      node /proj/packages/coordinator/dist/cli.js --ws ws://testnet:5000 --config /proj/packages/coordinator/coordinator.json"
+  wallet:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    links:
+      - 'testnet'
+      - 'coordinator'
+    environment:
+      - DEFAULT_COORDINATOR=http://172.30.1.3:8888
+    volumes:
+      - /run/docker.sock:/run/docker.sock:ro
+      - './packages:/proj/packages'
+    depends_on:
+      - 'coordinator'
+    command: > 
+    bash -c "source get_name.sh &&
+    nc -l -p 5354 &&
+    bash wait_deploy_contracts && 
+    sleep 15 && node /proj/packages/generator/dist/wallet.js"
+  organizer:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Generator.dockerfile
+    links:
+      - 'testnet'
+      - 'coordinator'
+      - 'wallet'
+    ports:
+      - '8080:8080'
+    volumes:
+      - './packages:/proj/packages'
+    depends_on:
+      - 'wallet'
+    command: bash -c "sleep 10 && node /proj/packages/generator/dist/organizer.js"
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
