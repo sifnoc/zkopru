@@ -1,20 +1,43 @@
 /* eslint-disable no-case-declarations */
 import path from 'path'
 import { toWei } from 'web3-utils'
+import fetch from 'node-fetch'
 
 import { FullNode } from '@zkopru/core'
-import { logger } from '@zkopru/utils'
+import { logger, sleep } from '@zkopru/utils'
 import { TransferGenerator } from './generator'
 import { getBase, startLogger } from './generator-utils'
 import { config } from './config'
 
-const accountIdx: number = parseInt(process.env.ID ?? '0')
-
-startLogger(`./WALLET_${accountIdx}_LOG`)
+startLogger(`./WALLET_LOG`)
 
 async function runGenerator() {
-  logger.info('Wallet Initializing')
-  logger.info(`Wallet selected account index ${accountIdx + 3}`)
+  // Wait ready
+  let ready = false
+  logger.info(`Standby for zkopru contracts are ready`)
+  while (!ready) {
+    try {
+      const readyResponse = await fetch(`http://organizer:8080/ready`, {
+        method: 'get',
+        timeout: 120,
+      })
+      ready = await readyResponse.json()
+    } catch (error) {
+      // logger.info(`Error checking organizer ready - ${error}`)
+    }
+    await sleep(5000)
+  }
+
+  logger.info('Wallet Initializing - get ID from organizer')
+  const response = await fetch(`http://organizer:8080/register`, {
+    method: 'post',
+    body: JSON.stringify({
+      role: 'wallet',
+    }),
+  })
+  const registered = await response.json()
+
+  logger.info(`Wallet selected account index ${registered.ID + 3}`)
 
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
     config.testnetUrl,
@@ -33,7 +56,9 @@ async function runGenerator() {
   // Account #0 - Coordinator
   // Account #1 - Slasher
   // Account #2 - None
-  const walletAccount = await hdWallet.createAccount(3 + accountIdx)
+  const walletAccount = await hdWallet.createAccount(
+    parseInt(registered.ID) + 3,
+  )
   const transferGeneratorConfig = {
     hdWallet,
     db: mockupDB,
@@ -43,10 +68,10 @@ async function runGenerator() {
     erc20: [],
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
+    ID: registered.ID,
   }
 
   const generator = new TransferGenerator(transferGeneratorConfig)
-  logger.info(`Wallet node start`)
 
   logger.info(`Start Generate Tansaction`)
   await generator.startGenerator()

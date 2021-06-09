@@ -25,6 +25,9 @@ async function testCoodinator() {
     db: mockupDB,
     slasher: slaherAccount.ethAccount,
   })
+  logger.info(
+    `UTXO tree root ${fullNode.layer2.grove.utxoTree.root().toString('hex')}`,
+  )
 
   const coordinatorIp = process.env.COORDINATOR_IP
 
@@ -48,6 +51,7 @@ async function testCoodinator() {
   // Override Block Generator for Observing
   coordinator.middlewares.proposer = new TestBlockProposer(coordinator.context)
 
+  logger.info(`Starting coordinaotpor`)
   coordinator.start()
 }
 

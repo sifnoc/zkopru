@@ -1,6 +1,7 @@
 /* eslint-disable no-case-declarations */
 import path from 'path'
 import { toWei } from 'web3-utils'
+import fetch from 'node-fetch'
 
 import { FullNode } from '@zkopru/core'
 import { logger, sleep } from '@zkopru/utils'
@@ -8,11 +9,27 @@ import { ZkWallet } from '@zkopru/zk-wizard'
 import { getBase, startLogger } from './generator-utils'
 import { config } from './config'
 
-startLogger(`./DEPOSITER_LOG`)
+startLogger(`./BLOCKTURNNER_LOG`)
 
-async function runDepositer() {
-  logger.info('Depositer Initializing')
+// Block Turnner is for Zkopru layer 2 chain being continue by deposit tx with enough fee
+async function runBlockTurner() {
+  // Wait ready
+  let ready = false
+  logger.info(`Standby for zkopru contracts are ready`)
+  while (!ready) {
+    try {
+      const readyResponse = await fetch(`http://organizer:8080/ready`, {
+        method: 'get',
+        timeout: 120,
+      })
+      ready = await readyResponse.json()
+    } catch (error) {
+      // logger.info(`Error checking organizer ready - ${error}`)
+    }
+    await sleep(5000)
+  }
 
+  logger.info('Layer2 block turner Initializing')
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
     config.testnetUrl,
     config.mnemonic,
@@ -41,15 +58,15 @@ async function runDepositer() {
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
   }
 
-  const depositer = new ZkWallet(depositerConfig)
-  depositer.node.start()
-  depositer.setAccount(walletAccount)
+  const turnner = new ZkWallet(depositerConfig)
+  turnner.node.start()
+  turnner.setAccount(walletAccount)
   logger.info(`Depositer node start`)
 
   // depositer.node.layer1.web3.eth.getBalance(depositer)
   while (true) {
     try {
-      const result = await depositer.depositEther(
+      const result = await turnner.depositEther(
         toWei('1', 'wei'),
         toWei('0.005'),
       )
@@ -63,4 +80,4 @@ async function runDepositer() {
   }
 }
 
-runDepositer()
+runBlockTurner()

@@ -27,13 +27,13 @@ export interface GeneratorConfig {
 export class TransferGenerator extends ZkWalletAccount {
   ID: number
 
-  activating: boolean
+  isActive: boolean
 
   noteAmount: noteAmount
 
   unspentUTXO: Utxo[]
 
-  onQueueUTXOSalt: number[]
+  usedUtxoSalt: number[]
 
   weiPrice: string
 
@@ -46,13 +46,13 @@ export class TransferGenerator extends ZkWalletAccount {
   constructor(config: ZkWalletAccountConfig & GeneratorConfig) {
     super(config)
     this.ID = config.ID ?? Math.floor(Math.random() * 10000) // TODO : It seems only need in docker environment
-    this.activating = false
+    this.isActive = false
     this.noteAmount = config.noteAmount ?? {
       eth: toWei('0.1'),
       fee: toWei('0.01'),
     }
     this.unspentUTXO = []
-    this.onQueueUTXOSalt = []
+    this.usedUtxoSalt = []
     this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
     this.usePreZkTx = false
 
@@ -77,8 +77,6 @@ export class TransferGenerator extends ZkWalletAccount {
       this.node.start()
     }
 
-    // let tx: RawTx
-
     logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
     try {
       const result = await this.depositEther(
@@ -90,77 +88,66 @@ export class TransferGenerator extends ZkWalletAccount {
       if (!result) {
         throw new Error(' Deposit Transaction Failed!')
       } else {
-        this.activating = true
-      }
-    } catch (err) {
-      logger.error(err)
-    }
-    // let currentUtxo
-
-    logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
-    try {
-      const result = await this.depositEther(
-        this.noteAmount.eth,
-        this.noteAmount.fee,
-        this.account?.zkAddress,
-        this.lastSalt,
-      )
-      if (!result) {
-        throw new Error(' Deposit Transaction Failed!')
+        this.isActive = true
+        logger.info(`activating loop is ${this.isActive}`)
       }
     } catch (err) {
       logger.error(err)
     }
 
-    while (this.activating) {
+    while (this.isActive) {
       this.unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
 
-      // Deposit if does not exist unspent utxo in this wallet
       if (this.unspentUTXO.length === 0) {
         logger.info('No Spendable Utxo, wait until available')
         await sleep(10000)
+        // eslint-disable-next-line no-continue
         continue
       }
 
-      // generate transfer Tx...
       // All transaction are self transaction with same amount, only unique things is salt.
-      const sendableUtxo: Utxo[] = []
-      let stagedUtxo
+      let sendableUtxo: Utxo | undefined
 
-      // TODO : refactor this
       for (const utxo of this.unspentUTXO) {
-        stagedUtxo = utxo
-        for (let i = 0; i < this.onQueueUTXOSalt.length; i++) {
-          if (this.onQueueUTXOSalt[i] === utxo.salt.toNumber()) {
-            stagedUtxo = undefined
+        logger.info(
+          `utxo of this.unspendUtxo ${logAll(
+            utxo.salt.toNumber(),
+          )} and length ${this.usedUtxoSalt.length}`,
+        )
+        let isUsedUtxo = false // creating short-circuit for checking not-used salt
+
+        // for reducing loop, backward iteration
+        for (let i = this.usedUtxoSalt.length + 1; i > 0; i--) {
+          logger.info(
+            `onQueueUTXOSalt - index >> ${i - 1} : ${this.usedUtxoSalt[i - 1]}`,
+          )
+          logger.info(
+            `onQueueUTXOSalt - value >> usedUtxoSalt ${
+              this.usedUtxoSalt[i - 1]
+            } utxo.salt : ${utxo.salt.toNumber()}`,
+          )
+          if (this.usedUtxoSalt[i - 1] === utxo.salt.toNumber()) {
+            isUsedUtxo = true
+            // logger.info(`Found used history`) // TODO: Delete before commit
             break
           }
         }
-        if (stagedUtxo != undefined) {
-          sendableUtxo.push(stagedUtxo) // last utxo always in
-        }
-        if (sendableUtxo.length >= 1) {
+        if (!isUsedUtxo) {
+          sendableUtxo = utxo
           break
         }
       }
 
       // TODO : Create Tx then goto queue
-      if (sendableUtxo.length > 0 && this.usePreZkTx) {
-        logger.info(
-          `sendable UTXO salts are ${logAll(
-            sendableUtxo.map(utxo => utxo.salt.toString()),
-          )}`,
-        )
-        logger.info(`${logAll(sendableUtxo)}`)
-        // currentUtxo = await this.db.findMany('Utxo', { where: {} })
-        // logger.info(`All UTXO 3>> ${logAll(currentUtxo)}`)
-
+      // TODO : not using flag, then goto check how many pre-generated utxo are available..
+      if (sendableUtxo && this.usePreZkTx) {
         const { tx, zkTx } = jsonToZkTx(
-          `./packages/generator/zktx/${sendableUtxo[0].salt}.json`,
+          `./packages/generator/zktx/${this.ID}/${sendableUtxo.salt}.json`,
         )
+        logger.info(`before sending tx ${logAll(zkTx)}`)
 
         try {
-          // TODO : private method in ZkWalletAccount class
+          // TODO : check private method in ZkWalletAccount class
           tx.outflow.forEach(async outflow => {
             logger.info(
               `try to create utxo ${outflow
@@ -196,18 +183,19 @@ export class TransferGenerator extends ZkWalletAccount {
           })
           this.lockUtxos(tx.inflow)
           await this.sendLayer2Tx(zkTx)
-          this.onQueueUTXOSalt.push(sendableUtxo[0].salt.toNumber())
+          this.usedUtxoSalt.push(sendableUtxo.salt.toNumber())
+          logger.info(`Updated 'usedUtxoSalt' >> ${this.usedUtxoSalt}`)
         } catch (err) {
           logger.error(err)
         }
-      } else if (sendableUtxo.length > 0) {
+      } else if (sendableUtxo && !this.usePreZkTx) {
         const testTxBuilder = new TestTxBuilder(this.account?.zkAddress!)
         const tx = testTxBuilder
-          .provide(...sendableUtxo)
+          .provide(sendableUtxo)
           .weiPerByte(this.weiPrice)
           .sendEther({
-            eth: Sum.from(sendableUtxo).eth.div(new BN(2)),
-            salt: sendableUtxo[0].salt.muln(2),
+            eth: Sum.from([sendableUtxo]).eth.div(new BN(2)), // TODO: reduce amount as much as a half of fee
+            salt: sendableUtxo.salt.muln(2),
             to: this.account?.zkAddress!,
           })
           .build()
@@ -228,29 +216,25 @@ export class TransferGenerator extends ZkWalletAccount {
             }
           }),
         }
-        // fs.writeFileSync(`${tx.inflow[0].salt.toString(10)}.json`, JSON.stringify(parsedZkTx))
-        logger.info(`Generated zkTx ${logAll(parsedZkTx)}`)
+        logger.info(parsedZkTx)
         try {
           await this.sendTx({
             tx,
             from: this.account,
             encryptTo: this.account?.zkAddress,
           })
-          sendableUtxo.forEach(utxo => {
-            this.onQueueUTXOSalt.push(utxo.salt.toNumber())
-          })
+          this.usedUtxoSalt.push(sendableUtxo.salt.toNumber())
         } catch (err) {
           logger.error(err)
-          // }
         }
       } else {
-        logger.info(`Waiting...`)
+        logger.debug(`No available utxo for now wait 1 sec`)
       }
       await sleep(1000)
     }
   }
 
   stopGenerator() {
-    this.activating = false
+    this.isActive = false
   }
 }

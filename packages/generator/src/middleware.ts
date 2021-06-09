@@ -62,8 +62,8 @@ export class TestBlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       logger.info(`Propose estimated gas ${expectedGas}`)
-      expectedGas = Math.floor(expectedGas * 1.5)
-      logger.info(`Make it 50% extra then floor gas ${expectedGas}`)
+      expectedGas = 85000
+      logger.info(`Set Gas ${expectedGas}`)
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return undefined
@@ -73,8 +73,11 @@ export class TestBlockProposer extends ProposerBase {
       logger.info(
         `Skip gen block. Aggregated fee is not enough yet ${block.header.fee} / ${expectedFee}`,
       )
+      logger.info(`Current collect zktx length : ${block.body.txs.length}`)
       return undefined
     }
+    logger.info(`send Propose Tx with zkTx length ${block.body.txs.length}`)
+
     const receipt = await layer1.sendTx(proposeTx, this.context.account, {
       gas: expectedGas,
       gasPrice: this.context.gasPrice.toString(),

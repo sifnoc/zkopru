@@ -6,8 +6,15 @@ import prettier from 'pino-pretty'
 import { Transform } from 'stream'
 import { networkInterfaces } from 'os'
 
-import { F } from '@zkopru/babyjubjub'
-import { Note, UtxoStatus } from '@zkopru/transaction'
+import { F, Fp, Point } from '@zkopru/babyjubjub'
+import {
+  Note,
+  Utxo,
+  RawTx,
+  ZkTx,
+  UtxoStatus,
+  ZkAddress,
+} from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
 import { logStream } from '@zkopru/utils'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
@@ -114,4 +121,85 @@ export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
     },
   })
   return unSpentUtxo
+}
+
+/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable jest/no-hooks */
+export function jsonToZkTx(filename: string) {
+  // TODO : replace db or something
+  const { rawTx, rawZkTx } = JSON.parse(fs.readFileSync(filename).toString())
+
+  const owner = ZkAddress.from(
+    Fp.from(rawTx.inflow[0].owner.PubSK),
+    Point.from(rawTx.inflow[0].owner.N.x, rawTx.inflow[0].owner.N.y),
+  )
+
+  const tx: RawTx = {
+    inflow: rawTx.inflow.map(flow => {
+      return new Utxo(
+        owner,
+        Fp.from(flow.salt),
+        {
+          eth: Fp.from(flow.eth),
+          tokenAddr: Fp.from(flow.tokenAddr),
+          erc20Amount: Fp.from(flow.erc20Amount),
+          nft: Fp.from(flow.asset.nft),
+        },
+        flow.status,
+      )
+    }),
+    outflow: rawTx.outflow.map(flow => {
+      return new Utxo(
+        owner,
+        Fp.from(flow.salt),
+        {
+          eth: Fp.from(flow.eth),
+          tokenAddr: Fp.from(flow.tokenAddr),
+          erc20Amount: Fp.from(flow.erc20Amount),
+          nft: Fp.from(flow.asset.nft),
+        },
+        flow.status,
+      )
+    }),
+    fee: Fp.from(rawTx.fee),
+  }
+
+  const zkTx = new ZkTx({
+    inflow: rawZkTx.inflow.map(flow => {
+      return {
+        nullifier: Fp.from(flow.nullifier),
+        root: Fp.from(flow.root),
+      }
+    }),
+    outflow: [
+      {
+        note: Fp.from(rawZkTx.outflow[0].note),
+        outflowType: Fp.from(rawZkTx.outflow[0].outflowType),
+      },
+      {
+        note: Fp.from(rawZkTx.outflow[1].note),
+        outflowType: Fp.from(rawZkTx.outflow[1].outflowType),
+      },
+    ],
+    fee: Fp.from(rawZkTx.fee),
+    proof: {
+      pi_a: [
+        Fp.from(rawZkTx.proof.pi_a[0]),
+        Fp.from(rawZkTx.proof.pi_a[1]),
+        Fp.from(rawZkTx.proof.pi_a[2]),
+      ],
+      pi_b: [
+        [Fp.from(rawZkTx.proof.pi_b[0][0]), Fp.from(rawZkTx.proof.pi_b[0][1])],
+        [Fp.from(rawZkTx.proof.pi_b[1][0]), Fp.from(rawZkTx.proof.pi_b[1][1])],
+        [Fp.from(rawZkTx.proof.pi_b[2][0]), Fp.from(rawZkTx.proof.pi_b[2][1])],
+      ],
+      pi_c: [
+        Fp.from(rawZkTx.proof.pi_c[0]),
+        Fp.from(rawZkTx.proof.pi_c[1]),
+        Fp.from(rawZkTx.proof.pi_c[2]),
+      ],
+    },
+    memo: Buffer.from(rawZkTx.memo.toString(), 'base64'), // Buffer
+  })
+  return { tx, zkTx }
 }
