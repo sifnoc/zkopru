@@ -39,7 +39,6 @@ services:
       - COORDINATOR_IP=172.30.1.3
     command: >
       bash -c "nc -l -p 5354 &&
-      bash wait_deploy_contracts.sh &&
       node /proj/packages/generator/dist/coordinator.js"
   organizer:
     build:
@@ -53,7 +52,7 @@ services:
       - 'coordinator'
     environment:
       - DEFAULT_COORDINATOR=http://172.30.1.3:8888
-    command: bash -c "sleep 10 && node /proj/packages/generator/dist/organizer.js"
+    command: bash -c "node /proj/packages/generator/dist/organizer.js"
   wallet:
     build:
       context: ./
@@ -66,8 +65,7 @@ services:
     depends_on:
       - 'organizer'
     command: > 
-      bash -c "source get_name.sh &&
-      sleep 15 && node /proj/packages/generator/dist/wallet.js"
+      bash -c "sleep 10 && node /proj/packages/generator/dist/wallet.js"
   turner:
     build:
       context: ./
