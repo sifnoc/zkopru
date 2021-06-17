@@ -12,32 +12,34 @@ import { config } from './config'
 startLogger(`./WALLET_LOG`)
 
 async function runGenerator() {
-  // Wait ready
-  let ready = false
-  logger.info(`Standby for zkopru contracts are ready`)
-  while (!ready) {
-    try {
-      const readyResponse = await fetch(`http://organizer:8080/ready`, {
-        method: 'get',
-        timeout: 120,
-      })
-      ready = await readyResponse.json()
-    } catch (error) {
-      // logger.info(`Error checking organizer ready - ${error}`)
-    }
-    await sleep(5000)
-  }
-
   logger.info('Wallet Initializing - get ID from organizer')
-  const response = await fetch(`http://organizer:8080/register`, {
+  const registerResponse = await fetch(`http://organizer:8080/register`, {
     method: 'post',
     body: JSON.stringify({
       role: 'wallet',
     }),
   })
-  const registered = await response.json()
+  const registered = await registerResponse.json()
 
   logger.info(`Wallet selected account index ${registered.ID + 3}`)
+
+  // Wait deposit sequence
+  let ready = false
+  logger.info(`Standby for deposit are ready`)
+  while (!ready) {
+    try {
+      const readyResponse = await fetch(`http://organizer:8080/canDeposit`, {
+        method: 'post',
+        body: JSON.stringify({
+          ID: registered.ID,
+        }),
+      })
+      ready = await readyResponse.json()
+    } catch (error) {
+      logger.info(`Error checking organizer ready - ${error}`)
+    }
+    await sleep(5000)
+  }
 
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
     config.testnetUrl,
@@ -52,13 +54,17 @@ async function runGenerator() {
     accounts: [],
   })
 
+  // Wait sync with coordinator, for checking coordinator works
+  walletNode.start()
+  while (!walletNode.synchronizer.isSynced()) {
+    await sleep(5000)
+  }
+
   // Assume that account index 0, 1, 2 are reserved
   // Account #0 - Coordinator
   // Account #1 - Slasher
   // Account #2 - None
-  const walletAccount = await hdWallet.createAccount(
-    parseInt(registered.ID) + 3,
-  )
+  const walletAccount = await hdWallet.createAccount(+registered.ID + 3)
   const transferGeneratorConfig = {
     hdWallet,
     db: mockupDB,
@@ -75,11 +81,6 @@ async function runGenerator() {
 
   logger.info(`Start Generate Tansaction`)
   await generator.startGenerator()
-
-  // setTimeout(async () => {
-  //   logger.info('Stop Generator')
-  //   await generator.stopGenerator()
-  // }, 100000)
 }
 
 runGenerator()

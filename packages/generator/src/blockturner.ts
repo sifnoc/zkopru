@@ -9,24 +9,32 @@ import { ZkWallet } from '@zkopru/zk-wizard'
 import { getBase, startLogger } from './generator-utils'
 import { config } from './config'
 
+// TODO: When transfered UTXO discovery features added, This will refactor as ETH supplier for testing wallets
 startLogger(`./BLOCKTURNNER_LOG`)
 
-// Block Turnner is for Zkopru layer 2 chain being continue by deposit tx with enough fee
+// Block Turner is for Zkopru layer 2 chain being continue by deposit tx with enough fee
 async function runBlockTurner() {
-  // Wait ready
+  // TODO : refactor waiting trigger as deposit event listen
   let ready = false
-  logger.info(`Standby for zkopru contracts are ready`)
+  logger.info(`Standby for All wallets are registered to organizer`)
   while (!ready) {
     try {
-      const readyResponse = await fetch(`http://organizer:8080/ready`, {
+      const registerResponse = await fetch(`http://organizer:8080/registered`, {
         method: 'get',
         timeout: 120,
       })
-      ready = await readyResponse.json()
+      const walletData = await registerResponse.json()
+      const walletStatus = walletData.map(wallet => {
+        return wallet.from != ''
+      })
+
+      if (!walletStatus.includes(false)) {
+        ready = true
+      }
     } catch (error) {
-      // logger.info(`Error checking organizer ready - ${error}`)
+      logger.info(`Error checking organizer ready - ${error}`)
     }
-    await sleep(5000)
+    await sleep(14000)
   }
 
   logger.info('Layer2 block turner Initializing')
@@ -46,9 +54,9 @@ async function runBlockTurner() {
   // Assume that account index 0, 1, 2 are reserved
   // Account #0 - Coordinator
   // Account #1 - Slasher
-  // Account #2 - Depositer
-  const walletAccount = await hdWallet.createAccount(3)
-  const depositerConfig = {
+  // Account #2 - Turner
+  const walletAccount = await hdWallet.createAccount(2)
+  const turnerConfig = {
     wallet: hdWallet,
     account: walletAccount,
     accounts: [walletAccount],
@@ -58,26 +66,43 @@ async function runBlockTurner() {
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
   }
 
-  const turnner = new ZkWallet(depositerConfig)
-  turnner.node.start()
-  turnner.setAccount(walletAccount)
-  logger.info(`Depositer node start`)
+  const turner = new ZkWallet(turnerConfig)
+  turner.node.start()
+  turner.setAccount(walletAccount)
 
-  // depositer.node.layer1.web3.eth.getBalance(depositer)
-  while (true) {
-    try {
-      const result = await turnner.depositEther(
+  // let stagedDeposits
+  let depositTimer
+  function depositLater() {
+    depositTimer = setTimeout(async () => {
+      logger.info(`No proposal detected in about 15 blocks, Sending deposit Tx`)
+      const result = await turner.depositEther(
         toWei('1', 'wei'),
         toWei('0.005'),
       )
       if (!result) {
         throw new Error('Deposit Transaction Failed!')
       }
-    } catch (err) {
-      logger.error(err)
-    }
-    await sleep(15000)
+    }, 14000 * 15) // about 15 blocks period time
   }
+
+  depositLater()
+
+  let lastProposalAt = 0
+  walletNode.layer1.coordinator.events
+    .NewProposal({ fromBlock: lastProposalAt })
+    .on('connected', subId => {
+      logger.info(`Additional proposal event watch Id: ${subId}`)
+    })
+    .on('data', async event => {
+      const { returnValues, blockNumber } = event
+      const { proposalNum, blockHash } = returnValues
+      logger.info(`newProposal: ${proposalNum} - ${blockHash} @ ${blockNumber}`)
+      lastProposalAt = blockNumber
+
+      // Reset timer for deposit
+      clearTimeout(depositTimer)
+      depositLater()
+    })
 }
 
 runBlockTurner()

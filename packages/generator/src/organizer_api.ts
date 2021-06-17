@@ -68,7 +68,9 @@ export class OrganizerApi {
 
   walletLock: AsyncLock
 
-  ready: boolean
+  contractsReady: boolean
+
+  lastDepositerID: number
 
   constructor(context: OrganizerContext, config?: OrganizerConfig) {
     this.context = context
@@ -83,21 +85,19 @@ export class OrganizerApi {
 
     this.walletLock = new AsyncLock()
 
-    this.ready = false
+    this.contractsReady = false
+
+    this.lastDepositerID = 0 // Will start deposit follow this number
 
     this.config = config ?? { Port: 8080 } // TODO : more configuration
   }
 
-  // TODO: create this method and variable purpose
+  // TODO: check this method purpose
   registerCoordinator(account: string, url: string) {
     this.context.coordinators[account] = url
   }
 
   registerWallet(account: string): number {
-    // TODO : registering Wallet and return ID
-    // TODO : use Async mutex when return ID
-
-    // Already Initialized
     const lastRegistered = this.organizerData.walletData?.length
     logger.info(
       `Current length ${lastRegistered}, ${logAll(
@@ -118,7 +118,8 @@ export class OrganizerApi {
     return web3.eth.subscribe('newBlockHeaders').on('data', async () => {
       const zkopruContractCode = await web3.eth.getCode(contractAddr)
       if (zkopruContractCode.length > 10000) {
-        this.ready = true
+        await sleep(60000) // Wait 60 sec for coordinator fully run up
+        this.contractsReady = true
       }
     })
   }
@@ -146,7 +147,7 @@ export class OrganizerApi {
       // Exctract Data from fetched data
       blockData.transactions.forEach(txHash => {
         for (let i = 0; i < blockData.transactions.length; i++) {
-          if (txData[i].hash == txHash) {
+          if (txData[i].hash === txHash) {
             const txdata = txData[i]
             const funcSig = txdata.input.slice(0, 10)
             txSummary[txHash] = {
@@ -156,7 +157,7 @@ export class OrganizerApi {
               gas: txdata.gas,
             }
           }
-          if (receiptData[i].transactionHash == txHash) {
+          if (receiptData[i].transactionHash === txHash) {
             const receipt = receiptData[i]
             txSummary[txHash] = {
               ...txSummary[txHash],
@@ -170,7 +171,7 @@ export class OrganizerApi {
       // Update Gas Table
       Object.keys(txSummary).forEach(txHash => {
         const data = txSummary[txHash]
-        if (gasTable[data.funcSig] == undefined) {
+        if (gasTable[data.funcSig] === undefined) {
           gasTable[data.funcSig] = [
             {
               from: data.from,
@@ -190,40 +191,89 @@ export class OrganizerApi {
   }
 
   async start() {
-    const readySubscribtion = await this.checkReady(config.zkopruContract)
-    logger.info(`Waiting zkopru contracts are deployed`)
-    while (this.ready == false) {
-      await sleep(10000)
-    }
+    const app = express()
+    app.use(express.text())
 
-    await readySubscribtion.unsubscribe((error, success) => {
-      if (success) {
-        logger.info(
-          'successfully unsubscribe "ready", run block watcher and API server ',
-        )
+    app.get(`/ready`, async (_, res) => {
+      res.send(this.contractsReady)
+    })
+
+    app.get('/registered', async (_, res) => {
+      res.send(this.organizerData.walletData)
+    })
+
+    app.post('/register', async (req, res) => {
+      let data
+      try {
+        data = JSON.parse(req.body)
+        logger.info(`register received data ${logAll(data)}`)
+      } catch (err) {
+        logger.error(err)
       }
-      if (error) {
-        logger.error(`failed to unsubscribe "ready" `)
+
+      // The test wallet will update address after first deposit
+      if (data.ID && data.address) {
+        logger.info(`updating address ${data.ID} as ${data.address}`)
+        this.organizerData.walletData?.forEach(wallet => {
+          if (wallet.registeredId === data.ID) {
+            wallet.from = data.address
+          }
+        })
+        this.lastDepositerID = data.ID
+        return
+      }
+
+      if (data.role === 'wallet') {
+        const id = await this.walletLock.acquire('wallet', () => {
+          return this.registerWallet(data.account ?? '')
+        })
+        res.send({ ID: id })
+      } else if (data.role === 'coordinator') {
+        this.registerCoordinator(data.account, data.url)
+      } else {
+        res.status(400).send(`Need to role for register`)
       }
     })
 
-    // Start Layer1 block watcher
-    this.watchLayer1block()
+    app.post('/canDeposit', async (req, res) => {
+      if (!this.contractsReady) {
+        res.send(false)
+        return
+      }
 
-    const app = express()
+      const data = JSON.parse(req.body)
+      if (+data.ID === this.lastDepositerID + 1) {
+        res.send(true)
+      } else {
+        res.send(false)
+      }
+    })
 
-    app.use(express.text())
+    app.post('/propose', async (req, res) => {
+      try {
+        const data = JSON.parse(req.body)
+        const { from, timestamp, proposed, txcount } = data
+        this.organizerData.coordinatorData?.push({
+          from,
+          timestamp,
+          proposeNum: proposed,
+          txcount,
+        })
+        res.sendStatus(200)
+      } catch (err) {
+        res.status(500).send(`Organizer server error: ${err.toString()}`)
+      }
+    })
+
     app.get('/gastable', (_, res) => {
       res.send(this.organizerData.layer1?.gasTable)
     })
-    app.get('/tps', (_, res) => {
-      // let proposedData: CoordinatorData[] = []
-      // const coordAddrs = Object.keys(this.organizerData.coordinators!) // Initialized at constructor
 
+    app.get('/tps', (_, res) => {
       let previousProposeTime: number
-      if (this.organizerData.coordinatorData != []) {
+      if (this.organizerData.coordinatorData !== []) {
         const response = this.organizerData.coordinatorData!.map(data => {
-          if (data.proposeNum == 0) {
+          if (data.proposeNum === 0) {
             previousProposeTime = data.timestamp
           }
           const duration = Math.floor(
@@ -242,52 +292,32 @@ export class OrganizerApi {
         res.send(`Not yet proposed on Layer2`)
       }
     })
-    app.get(`/ready`, async (_, res) => {
-      res.send(this.ready)
-    })
-    // req : {role: 'wallet' | 'coordinator', account: string, url?: string}
-    app.post('/register', async (req, res) => {
-      let data
-      try {
-        // TODO : delete this term
-        // logger.info(`register received req ${logAll(req)}`)
-        data = JSON.parse(req.body)
-        logger.info(`register received data ${data}`)
-      } catch (err) {
-        logger.error(err)
-      }
-      if (data.role == 'wallet') {
-        const id = await this.walletLock.acquire('wallet', () => {
-          return this.registerWallet(data.account ?? '0x0')
-        })
-        res.send({ ID: id })
-      } else if (data.role == 'coordinator') {
-        this.registerCoordinator(data.account, data.url)
-      } else {
-        res.status(400).send(`Need to role for register`)
-      }
-    })
-    app.post('/propose', async (req, res) => {
-      try {
-        const data = JSON.parse(req.body)
-        const { from, timestamp, proposed, txcount } = data
-        this.organizerData.coordinatorData?.push({
-          from,
-          timestamp,
-          proposeNum: proposed,
-          txcount,
-        })
-        res.sendStatus(200)
-      } catch (err) {
-        res.status(500).send(`Organizer server error: ${err.toString()}`)
-      }
-    })
-    // TODO : create metric endpoint
+
+    // TODO : create metric with prom-client
     app.get(`/metric`, async (_, res) => {
       return res.sendStatus(200)
     })
+
     app.listen(this.config.Port, () => {
-      logger.info(`[Organizer] Server is running`)
+      logger.info(`Server is running`)
     })
+
+    const readySubscribtion = await this.checkReady(config.zkopruContract)
+    logger.info(`Waiting zkopru contracts are deployed`)
+    while (this.contractsReady === false) {
+      await sleep(14000)
+    }
+
+    await readySubscribtion.unsubscribe((error, success) => {
+      if (success) {
+        logger.info('successfully unsubscribe "ready", run block watcher')
+      }
+      if (error) {
+        logger.error(`failed to unsubscribe "ready" `)
+      }
+    })
+
+    // Start Layer1 block watcher
+    this.watchLayer1block()
   }
 }

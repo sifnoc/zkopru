@@ -1,6 +1,7 @@
 // import fs from 'fs'
 import BN from 'bn.js'
 import { toWei } from 'web3-utils'
+import fetch from 'node-fetch'
 
 import { Fp } from '@zkopru/babyjubjub'
 import { DB } from '@zkopru/database'
@@ -33,7 +34,7 @@ export class TransferGenerator extends ZkWalletAccount {
 
   unspentUTXO: Utxo[]
 
-  usedUtxoSalt: number[]
+  usedUtxoSalt: Set<number>
 
   weiPrice: string
 
@@ -52,7 +53,7 @@ export class TransferGenerator extends ZkWalletAccount {
       fee: toWei('0.01'),
     }
     this.unspentUTXO = []
-    this.usedUtxoSalt = []
+    this.usedUtxoSalt = new Set([])
     this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
     this.usePreZkTx = false
 
@@ -77,7 +78,6 @@ export class TransferGenerator extends ZkWalletAccount {
       this.node.start()
     }
 
-    logger.info(`sending deposit Tx with salt ${this.lastSalt.toString()}`)
     try {
       const result = await this.depositEther(
         toWei('50'),
@@ -88,11 +88,28 @@ export class TransferGenerator extends ZkWalletAccount {
       if (!result) {
         throw new Error(' Deposit Transaction Failed!')
       } else {
-        this.isActive = true
-        logger.info(`activating loop is ${this.isActive}`)
+        logger.info(`Deposit Tx sent`)
       }
     } catch (err) {
       logger.error(err)
+    }
+
+    while (!this.isActive) {
+      await sleep(1000)
+      const stagedDeposit = await this.node.layer1.upstream.methods
+        .stagedDeposits()
+        .call()
+      if (parseInt(stagedDeposit.merged, 10) === 0) {
+        this.isActive = true
+        fetch(`http://organizer:8080/register`, {
+          method: 'post',
+          body: JSON.stringify({
+            ID: this.ID,
+            address: this.account?.ethAddress,
+          }),
+        })
+        logger.info(`First Deposit Tx is processed`)
+      }
     }
 
     while (this.isActive) {
@@ -101,7 +118,6 @@ export class TransferGenerator extends ZkWalletAccount {
       if (this.unspentUTXO.length === 0) {
         logger.info('No Spendable Utxo, wait until available')
         await sleep(10000)
-        // eslint-disable-next-line no-continue
         continue
       }
 
@@ -109,28 +125,9 @@ export class TransferGenerator extends ZkWalletAccount {
       let sendableUtxo: Utxo | undefined
 
       for (const utxo of this.unspentUTXO) {
-        logger.info(
-          `utxo of this.unspendUtxo ${logAll(
-            utxo.salt.toNumber(),
-          )} and length ${this.usedUtxoSalt.length}`,
-        )
-        let isUsedUtxo = false // creating short-circuit for checking not-used salt
-
-        // for reducing loop, backward iteration
-        for (let i = this.usedUtxoSalt.length + 1; i > 0; i--) {
-          logger.info(
-            `onQueueUTXOSalt - index >> ${i - 1} : ${this.usedUtxoSalt[i - 1]}`,
-          )
-          logger.info(
-            `onQueueUTXOSalt - value >> usedUtxoSalt ${
-              this.usedUtxoSalt[i - 1]
-            } utxo.salt : ${utxo.salt.toNumber()}`,
-          )
-          if (this.usedUtxoSalt[i - 1] === utxo.salt.toNumber()) {
-            isUsedUtxo = true
-            // logger.info(`Found used history`) // TODO: Delete before commit
-            break
-          }
+        let isUsedUtxo = false
+        if (this.usedUtxoSalt.has(utxo.salt.toNumber())) {
+          isUsedUtxo = true
         }
         if (!isUsedUtxo) {
           sendableUtxo = utxo
@@ -144,17 +141,10 @@ export class TransferGenerator extends ZkWalletAccount {
         const { tx, zkTx } = jsonToZkTx(
           `./packages/generator/zktx/${this.ID}/${sendableUtxo.salt}.json`,
         )
-        logger.info(`before sending tx ${logAll(zkTx)}`)
 
         try {
           // TODO : check private method in ZkWalletAccount class
           tx.outflow.forEach(async outflow => {
-            logger.info(
-              `try to create utxo ${outflow
-                .hash()
-                .toUint256()
-                .toString()}`,
-            )
             await this.db.create('Utxo', {
               hash: outflow
                 .hash()
@@ -183,8 +173,7 @@ export class TransferGenerator extends ZkWalletAccount {
           })
           this.lockUtxos(tx.inflow)
           await this.sendLayer2Tx(zkTx)
-          this.usedUtxoSalt.push(sendableUtxo.salt.toNumber())
-          logger.info(`Updated 'usedUtxoSalt' >> ${this.usedUtxoSalt}`)
+          this.usedUtxoSalt.add(sendableUtxo.salt.toNumber())
         } catch (err) {
           logger.error(err)
         }
@@ -216,14 +205,14 @@ export class TransferGenerator extends ZkWalletAccount {
             }
           }),
         }
-        logger.info(parsedZkTx)
+        logger.info(`Created ZkTx : ${logAll(parsedZkTx)}`)
         try {
           await this.sendTx({
             tx,
             from: this.account,
             encryptTo: this.account?.zkAddress,
           })
-          this.usedUtxoSalt.push(sendableUtxo.salt.toNumber())
+          this.usedUtxoSalt.add(sendableUtxo.salt.toNumber())
         } catch (err) {
           logger.error(err)
         }
