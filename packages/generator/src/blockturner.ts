@@ -25,7 +25,7 @@ async function runBlockTurner() {
       })
       const walletData = await registerResponse.json()
       const walletStatus = walletData.map(wallet => {
-        return wallet.from != ''
+        return wallet.from !== ''
       })
 
       if (!walletStatus.includes(false)) {
@@ -36,6 +36,7 @@ async function runBlockTurner() {
     }
     await sleep(14000)
   }
+  await sleep(35000)
 
   logger.info('Layer2 block turner Initializing')
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(

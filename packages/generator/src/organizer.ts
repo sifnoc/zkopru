@@ -12,6 +12,7 @@ const webSocketProvider = new Web3.providers.WebsocketProvider(
   config.testnetUrl,
   {
     reconnect: { auto: true },
+    timeout: 600,
   },
 )
 
@@ -25,5 +26,10 @@ const organierContext = {
   },
 } // Test Coordinator
 
-const organizer = new OrganizerApi(organierContext)
+const organizerConfig = {
+  queue: { host: 'redis', port: 6379 },
+  port: 8080,
+}
+
+const organizer = new OrganizerApi(organierContext, organizerConfig)
 organizer.start()

@@ -62,8 +62,8 @@ export class TestBlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       logger.info(`Propose estimated gas ${expectedGas}`)
-      expectedGas = 85000
-      logger.info(`Set Gas ${expectedGas}`)
+      expectedGas = 1000000
+      logger.info(`Set Gas as ${expectedGas}`)
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return undefined

@@ -69,12 +69,14 @@ async function runGenerator() {
     hdWallet,
     db: mockupDB,
     account: walletAccount,
+    accounts: [walletAccount],
     node: walletNode,
     noteAmount: { eth: toWei('0.1'), fee: toWei('0.01') },
     erc20: [],
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
     ID: registered.ID,
+    redis: { host: 'redis', port: 6379 },
   }
 
   const generator = new TransferGenerator(transferGeneratorConfig)

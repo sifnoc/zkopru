@@ -16,7 +16,7 @@ import {
   ZkAddress,
 } from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
-import { logStream } from '@zkopru/utils'
+import { logger, logStream } from '@zkopru/utils'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
 import { ZkWallet } from '~zk-wizard/zk-wallet'
 
@@ -123,12 +123,25 @@ export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
   return unSpentUtxo
 }
 
-/* eslint-disable @typescript-eslint/camelcase */
-/* eslint-disable jest/no-hooks */
-export function jsonToZkTx(filename: string) {
-  // TODO : replace db or something
+/* eslint-disable @typescript-eslint/no-use-before-define */
+// TODO : replace db or something
+export function fileToZkTx(filename: string) {
   const { rawTx, rawZkTx } = JSON.parse(fs.readFileSync(filename).toString())
+  return jsonToZkTx(rawTx, rawZkTx)
+}
 
+export function jsonToZkTx(rawTx, rawZkTx) {
+  const tx = getTx(rawTx)
+  const zkTx = getZkTx(rawZkTx)
+
+  return { tx, zkTx }
+}
+
+export function getTx(rawTx) {
+  logger.info(`getTx >> restructured tx from rawTx`)
+  if (rawTx === undefined) {
+    throw Error(`rawTx is undefined, please check queue data`)
+  }
   const owner = ZkAddress.from(
     Fp.from(rawTx.inflow[0].owner.PubSK),
     Point.from(rawTx.inflow[0].owner.N.x, rawTx.inflow[0].owner.N.y),
@@ -163,7 +176,11 @@ export function jsonToZkTx(filename: string) {
     }),
     fee: Fp.from(rawTx.fee),
   }
+  logger.info(`>> resturectured tx is ${logAll(tx)}`)
+  return tx
+}
 
+export function getZkTx(rawZkTx) {
   const zkTx = new ZkTx({
     inflow: rawZkTx.inflow.map(flow => {
       return {
@@ -201,5 +218,5 @@ export function jsonToZkTx(filename: string) {
     },
     memo: Buffer.from(rawZkTx.memo.toString(), 'base64'), // Buffer
   })
-  return { tx, zkTx }
+  return zkTx
 }

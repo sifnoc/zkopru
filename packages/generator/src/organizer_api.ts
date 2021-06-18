@@ -2,7 +2,9 @@ import Web3 from 'web3'
 import { Transaction, TransactionReceipt } from 'web3-core'
 import AsyncLock from 'async-lock'
 import express from 'express'
+import { Job, Queue, Worker, QueueScheduler } from 'bullmq'
 import { logger, sleep } from '@zkopru/utils'
+import { L1Contract } from '@zkopru/core'
 import { logAll } from './generator-utils'
 import { config } from './config'
 
@@ -55,8 +57,18 @@ interface OrganizerContext {
   coordinators: CoordinatorUrls
 }
 
+interface QueueConnection {
+  host: string
+  port: number
+}
+
 interface OrganizerConfig {
-  Port: number
+  queue: QueueConnection
+  port: number
+}
+
+interface WalletQueues {
+  [key: string]: Queue<any, any, string>
 }
 
 export class OrganizerApi {
@@ -72,6 +84,14 @@ export class OrganizerApi {
 
   lastDepositerID: number
 
+  workerReady: boolean
+
+  walletQueues: WalletQueues
+
+  worker: Worker
+
+  scheduler: QueueScheduler
+
   constructor(context: OrganizerContext, config?: OrganizerConfig) {
     this.context = context
     this.organizerData = {
@@ -85,11 +105,35 @@ export class OrganizerApi {
 
     this.walletLock = new AsyncLock()
 
+    this.lastDepositerID = 0
+
     this.contractsReady = false
 
-    this.lastDepositerID = 0 // Will start deposit follow this number
+    this.workerReady = false // TODO : check this is necessary..
 
-    this.config = config ?? { Port: 8080 } // TODO : more configuration
+    this.config = config ?? {
+      queue: { host: 'localhost', port: 6379 },
+      port: 8080,
+    }
+
+    this.walletQueues = {}
+
+    this.worker = new Worker(
+      'mainTxQueue',
+      async (job: Job) => {
+        const walletID = Object.keys(job.data)[0]
+        const walletQueue = this.walletQueues[walletID]
+        const { rawTx, rawZkTx } = job.data[walletID]
+        logger.info(`add job as ${walletID}`)
+        logger.info(`deliver data ${logAll(rawTx)}`)
+        await walletQueue.add(walletID, { rawTx, rawZkTx })
+      },
+      { limiter: { max: 1, duration: 1000 }, connection: this.config.queue },
+    ) // TODO : dutaion config from API
+
+    this.scheduler = new QueueScheduler('maxTxQueue', {
+      connection: this.config.queue,
+    })
   }
 
   // TODO: check this method purpose
@@ -104,31 +148,48 @@ export class OrganizerApi {
         this.organizerData.walletData,
       )}`,
     )
+    const updatedNumber = (lastRegistered ?? 0) + 1
+
     this.organizerData.walletData?.push({
       from: account,
-      registeredId: (lastRegistered ?? 0) + 1,
+      registeredId: updatedNumber,
     })
+    this.walletQueues[
+      `wallet${updatedNumber}`
+    ] = new Queue(`wallet${updatedNumber}`, { connection: this.config.queue })
 
-    logger.info(`account ${account} are registered`)
     return this.organizerData.walletData!.length
   }
 
   private async checkReady(contractAddr: string) {
     const { web3 } = this.context
+
+    // Wait for deploy contract
+    while (true) {
+      const contractCode = await web3.eth.getCode(contractAddr)
+      if (contractCode.length > 10000) {
+        break
+      } else {
+        await sleep(1000)
+      }
+    }
+
+    const l1contract = new L1Contract(web3, contractAddr)
     return web3.eth.subscribe('newBlockHeaders').on('data', async () => {
-      const zkopruContractCode = await web3.eth.getCode(contractAddr)
-      if (zkopruContractCode.length > 10000) {
-        await sleep(60000) // Wait 60 sec for coordinator fully run up
+      const perdiod = await l1contract.upstream.methods
+        .CHALLENGE_PERIOD()
+        .call()
+      if (+perdiod === 30) {
         this.contractsReady = true
       }
     })
   }
 
-  private async watchLayer1block() {
+  private async watchLayer1() {
     const { web3 } = this.context
     const { gasTable } = this.organizerData.layer1! // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function (data) {
+    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []
@@ -294,16 +355,29 @@ export class OrganizerApi {
     })
 
     // TODO : create metric with prom-client
+    // TODO: Testing
+    app.post('/targetTPS', async (req, res) => {
+      try {
+        const data = JSON.parse(req.body)
+        const { targetTPS } = data
+        this.worker.opts.limiter = { max: targetTPS, duration: 1000 }
+        res.send(this.worker.opts.limiter)
+      } catch (error) {
+        res.status(400).send(`Error >> ${error}`)
+      }
+    })
+
+    // TODO : create metric endpoint
     app.get(`/metric`, async (_, res) => {
       return res.sendStatus(200)
     })
 
-    app.listen(this.config.Port, () => {
+    app.listen(this.config.port, () => {
       logger.info(`Server is running`)
     })
 
     const readySubscribtion = await this.checkReady(config.zkopruContract)
-    logger.info(`Waiting zkopru contracts are deployed`)
+    logger.info(`Waiting zkopru contracts are ready`)
     while (this.contractsReady === false) {
       await sleep(14000)
     }
@@ -318,6 +392,6 @@ export class OrganizerApi {
     })
 
     // Start Layer1 block watcher
-    this.watchLayer1block()
+    this.watchLayer1()
   }
 }
