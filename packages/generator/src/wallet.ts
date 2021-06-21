@@ -46,28 +46,21 @@ async function runGenerator() {
     config.mnemonic,
     'helloworld',
   )
+  const walletAccount = await hdWallet.createAccount(+registered.ID + 3)
 
   const walletNode: FullNode = await FullNode.new({
     provider: webSocketProvider,
     address: config.zkopruContract, // Zkopru contract
     db: mockupDB,
-    accounts: [],
+    accounts: [walletAccount],
   })
-
-  // Wait sync with coordinator, for checking coordinator works
-  walletNode.start()
-  while (!walletNode.synchronizer.isSynced()) {
-    await sleep(5000)
-  }
 
   // Assume that account index 0, 1, 2 are reserved
   // Account #0 - Coordinator
   // Account #1 - Slasher
   // Account #2 - None
-  const walletAccount = await hdWallet.createAccount(+registered.ID + 3)
   const transferGeneratorConfig = {
     hdWallet,
-    db: mockupDB,
     account: walletAccount,
     accounts: [walletAccount],
     node: walletNode,

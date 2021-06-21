@@ -16,7 +16,7 @@ import {
   ZkAddress,
 } from '@zkopru/transaction'
 import { HDWallet, ZkAccount } from '@zkopru/account'
-import { logger, logStream } from '@zkopru/utils'
+import { logStream } from '@zkopru/utils'
 import { SQLiteConnector, schema } from '@zkopru/database/dist/node'
 import { ZkWallet } from '~zk-wizard/zk-wallet'
 
@@ -82,7 +82,7 @@ export function logAll(Object) {
 }
 
 export function startLogger(fileName: string) {
-  const writeStream = fs.createWriteStream(`/${fileName}`)
+  const writeStream = fs.createWriteStream(`./${fileName}`)
   logStream.addStream(writeStream)
   const pretty = prettier({
     translateTime: false,
@@ -138,7 +138,6 @@ export function jsonToZkTx(rawTx, rawZkTx) {
 }
 
 export function getTx(rawTx) {
-  logger.info(`getTx >> restructured tx from rawTx`)
   if (rawTx === undefined) {
     throw Error(`rawTx is undefined, please check queue data`)
   }
@@ -176,11 +175,11 @@ export function getTx(rawTx) {
     }),
     fee: Fp.from(rawTx.fee),
   }
-  logger.info(`>> resturectured tx is ${logAll(tx)}`)
   return tx
 }
 
 export function getZkTx(rawZkTx) {
+  /* eslint-disable @typescript-eslint/camelcase */
   const zkTx = new ZkTx({
     inflow: rawZkTx.inflow.map(flow => {
       return {

@@ -5,25 +5,19 @@ import { Queue, Worker, Job } from 'bullmq'
 import fetch from 'node-fetch'
 
 import { Fp } from '@zkopru/babyjubjub'
-import { DB } from '@zkopru/database'
-import { Sum, UtxoStatus, Utxo, RawTx, ZkTx } from '@zkopru/transaction'
-import { HDWallet, ZkAccount } from '@zkopru/account'
+import { UtxoStatus, Utxo, RawTx, ZkTx } from '@zkopru/transaction'
+import { HDWallet } from '@zkopru/account'
 import { logger, sleep } from '@zkopru/utils'
 import { ZkWalletAccount, ZkWalletAccountConfig } from '@zkopru/zk-wizard'
 import { TestTxBuilder } from './testbuilder'
-import { fileToZkTx, jsonToZkTx, getTx, logAll } from './generator-utils'
-
-// TODO : extends to other type of assets
-export type noteAmount = { eth: string; fee: string }
+import { fileToZkTx, jsonToZkTx, logAll } from './generator-utils'
 
 export interface GeneratorConfig {
-  db: DB
   hdWallet: HDWallet
-  account: ZkAccount
-  noteAmount?: noteAmount
   weiPrice?: string
   ID?: number
   redis?: { host: string; port: number }
+  preZkTxPath?: string
 }
 
 //* * Only ETH transafer zkTx generator as 1 inflow 2 outflows */
@@ -31,10 +25,6 @@ export class TransferGenerator extends ZkWalletAccount {
   ID: number
 
   isActive: boolean
-
-  noteAmount: noteAmount
-
-  unspentUTXO: Utxo[]
 
   usedUtxoSalt: Set<number>
 
@@ -44,19 +34,17 @@ export class TransferGenerator extends ZkWalletAccount {
 
   usePreZkTx: boolean
 
+  preZkTxPath: string
+
   queue: Queue
 
-  worker: Worker
+  queueConnection: any
 
   constructor(config: ZkWalletAccountConfig & GeneratorConfig) {
     super(config)
     this.ID = config.ID ?? Math.floor(Math.random() * 10000) // TODO : It seems only need in docker environment
     this.isActive = false
-    this.noteAmount = config.noteAmount ?? {
-      eth: toWei('0.1'),
-      fee: toWei('0.01'),
-    }
-    this.unspentUTXO = []
+    this.preZkTxPath = config.preZkTxPath ?? `../zktx/${this.ID}`
     this.usedUtxoSalt = new Set([])
     this.weiPrice = config.weiPrice ?? toWei('2000', 'gwei')
     this.usePreZkTx = false
@@ -76,45 +64,14 @@ export class TransferGenerator extends ZkWalletAccount {
     */
     this.lastSalt = Fp.from(1)
 
-    const connection = {
+    this.queueConnection = {
       connection: {
         host: config.redis?.host ?? 'localhost',
         port: config.redis?.port ?? 6379,
       },
     }
 
-    this.queue = new Queue('mainTxQueue', connection)
-
-    this.worker = new Worker(
-      `wallet${this.ID}`,
-      async (job: Job) => {
-        logger.info(`job.data >> ${logAll(job.data)}`)
-        const { rawTx, rawZkTx } = job.data
-        if (rawZkTx) {
-          logger.info(`Worker >> zkTx is exist`)
-        } else {
-          logger.info(`Worker >> zkTx ${rawZkTx}`)
-        }
-
-        if (rawZkTx) {
-          logger.info(`Sending Pre-generated zkTx`)
-          const { tx, zkTx } = jsonToZkTx(rawTx, rawZkTx)
-          await this.sendPreZkTx(tx, zkTx)
-        } else {
-          logger.info(`Sending generated zkTx >> `)
-          const tx = getTx(rawTx)
-          await this.sendZkTx(tx)
-        }
-
-        // try {
-        //   const { tx, zkTx } = jsonToZkTx(rawTx, rawZkTx)
-        //   this.sendZkTx(tx, zkTx)
-        // } catch (error) {
-        //   logger.error(`Error > ${error}`)
-        // }
-      },
-      connection,
-    )
+    this.queue = new Queue('mainTxQueue', this.queueConnection)
   }
 
   async sendPreZkTx(tx: RawTx, zkTx: ZkTx) {
@@ -160,16 +117,50 @@ export class TransferGenerator extends ZkWalletAccount {
     }
   }
 
-  async sendZkTx(tx: RawTx) {
-    try {
-      await this.sendTx({
-        tx,
-        from: this.account,
-        encryptTo: this.account?.zkAddress,
-      })
-    } catch (err) {
-      logger.error(err)
-    }
+  async startWorker() {
+    logger.info(`Worker started`)
+    const worker = new Worker(
+      `wallet${this.ID}`,
+      async (job: Job) => {
+        // logger.info(`job.data >> ${logAll(job.data)}`)
+        const { rawTx, rawZkTx } = job.data
+        const { tx, zkTx } = jsonToZkTx(rawTx, rawZkTx)
+        const response = await this.sendLayer2Tx(zkTx)
+        if (response.status !== 200) {
+          await this.unlockUtxos(tx.inflow)
+          throw Error(await response.text())
+        }
+        // const spendableUtxo = new Utxo(this.account?.zkAddress!, Fp.from(rawTx.salt), rawTx.asset, UtxoStatus.NON_INCLUDED)
+        // logger.info(`generated tx from .. zkAddress ${logAll(this.account?.zkAddress)}`)
+        // const testTxBuilder = new TestTxBuilder(this.account?.zkAddress!)
+        // logger.info(`Instanced txbuilder >> sum eth : ${spendableUtxo.asset.eth.div(new BN(2))}`)
+        // const tx = testTxBuilder
+        //   .provide(...[spendableUtxo])
+        //   .weiPerByte(this.weiPrice)
+        //   .sendEther({
+        //     eth: spendableUtxo.asset.eth.div(new BN(2)), // TODO: eth amount include a half of fee
+        //     salt: spendableUtxo.salt.muln(2),
+        //     to: this.account?.zkAddress!,
+        //   })
+        //   .build()
+
+        // logger.info(`Built tx >> ${logAll(tx)}`)
+        // try {
+        //   await this.sendTx({
+        //     tx,
+        //     from: this.account,
+        //     encryptTo: this.account?.zkAddress,
+        //   })
+        // } catch (err) {
+        //   logger.error(err)
+        // }
+      },
+      this.queueConnection,
+    )
+
+    worker.on('completed', (job: Job) => {
+      logger.info(`Worker job ${logAll(job.id)} completed`)
+    })
   }
 
   async startGenerator() {
@@ -180,9 +171,9 @@ export class TransferGenerator extends ZkWalletAccount {
     try {
       const result = await this.depositEther(
         toWei('50'),
-        this.noteAmount.fee,
+        toWei('0.01'),
         this.account?.zkAddress,
-        this.lastSalt,
+        Fp.from(1),
       )
       if (!result) {
         throw new Error(' Deposit Transaction Failed!')
@@ -192,14 +183,14 @@ export class TransferGenerator extends ZkWalletAccount {
     } catch (err) {
       logger.error(err)
     }
-    await sleep(10000)
 
     while (!this.isActive) {
       await sleep(1000)
       const stagedDeposit = await this.node.layer1.upstream.methods
         .stagedDeposits()
         .call()
-      if (parseInt(stagedDeposit.merged, 10) === 0) {
+
+      if (+stagedDeposit.merged === 0) {
         this.isActive = true
         fetch(`http://organizer:8080/register`, {
           method: 'post',
@@ -208,9 +199,15 @@ export class TransferGenerator extends ZkWalletAccount {
             address: this.account?.ethAddress,
           }),
         })
-        logger.info(`First Deposit Tx is processed`)
+        logger.info(`Deposit Tx is processed`)
       }
     }
+
+    this.startWorker()
+
+    // TODO : before start loop, check and get list of pre-generated zktx on ID
+    // const preZkTxFiles = fs.readdirSync(this.preZkTxPath)
+    // logger.info(`current pre-generated zktx files ${preZkTxFiles.length}`)
 
     while (this.isActive) {
       const onQueue = await this.queue.getJobCounts('wait', 'active', 'delayed')
@@ -218,20 +215,18 @@ export class TransferGenerator extends ZkWalletAccount {
         await sleep(1000)
         continue
       }
-      logger.info(`Queue are remain for new Utxo`)
+      const unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
 
-      this.unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
-
-      if (this.unspentUTXO.length === 0) {
+      if (unspentUTXO.length === 0) {
         logger.info('No Spendable Utxo, wait until available')
-        await sleep(10000)
+        await sleep(5000)
         continue
       }
 
       // All transaction are self transaction with same amount, only unique things is salt.
       let sendableUtxo: Utxo | undefined
 
-      for (const utxo of this.unspentUTXO) {
+      for (const utxo of unspentUTXO) {
         let isUsedUtxo = false
         if (this.usedUtxoSalt.has(utxo.salt.toNumber())) {
           isUsedUtxo = true
@@ -293,7 +288,7 @@ export class TransferGenerator extends ZkWalletAccount {
           .provide(sendableUtxo)
           .weiPerByte(this.weiPrice)
           .sendEther({
-            eth: Sum.from([sendableUtxo]).eth.div(new BN(2)), // TODO: eth amount include a half of fee
+            eth: sendableUtxo.asset.eth.div(new BN(2)), // TODO: eth amount include a half of fee
             salt: sendableUtxo.salt.muln(2),
             to: this.account?.zkAddress!,
           })
@@ -317,11 +312,17 @@ export class TransferGenerator extends ZkWalletAccount {
         }
         logger.info(`Created ZkTx : ${logAll(parsedZkTx)}`)
         try {
-          await this.sendTx({
+          const zkTx = await this.shieldTx({
             tx,
             from: this.account,
             encryptTo: this.account?.zkAddress,
           })
+          // await this.sendTx({
+          //   tx,
+          //   from: this.account,
+          //   encryptTo: this.account?.zkAddress,
+          // })
+          this.queue.add(`wallet${this.ID}`, { rawTx: tx, rawZkTx: zkTx })
           this.usedUtxoSalt.add(sendableUtxo.salt.toNumber())
         } catch (err) {
           logger.error(err)

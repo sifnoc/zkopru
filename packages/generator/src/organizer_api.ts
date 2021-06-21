@@ -4,7 +4,7 @@ import AsyncLock from 'async-lock'
 import express from 'express'
 import { Job, Queue, Worker, QueueScheduler } from 'bullmq'
 import { logger, sleep } from '@zkopru/utils'
-import { L1Contract } from '@zkopru/core'
+import { Layer1 } from '@zkopru/contracts'
 import { logAll } from './generator-utils'
 import { config } from './config'
 
@@ -121,14 +121,11 @@ export class OrganizerApi {
     this.worker = new Worker(
       'mainTxQueue',
       async (job: Job) => {
-        const walletID = Object.keys(job.data)[0]
-        const walletQueue = this.walletQueues[walletID]
-        const { rawTx, rawZkTx } = job.data[walletID]
-        logger.info(`add job as ${walletID}`)
-        logger.info(`deliver data ${logAll(rawTx)}`)
-        await walletQueue.add(walletID, { rawTx, rawZkTx })
+        const { rawTx, rawZkTx } = job.data
+        const walletQueue = this.walletQueues[job.name]
+        await walletQueue.add(job.name, { rawTx, rawZkTx })
       },
-      { limiter: { max: 1, duration: 1000 }, connection: this.config.queue },
+      { limiter: { max: 1, duration: 10000 }, connection: this.config.queue },
     ) // TODO : dutaion config from API
 
     this.scheduler = new QueueScheduler('maxTxQueue', {
@@ -161,12 +158,12 @@ export class OrganizerApi {
     return this.organizerData.walletData!.length
   }
 
-  private async checkReady(contractAddr: string) {
+  private async checkReady() {
     const { web3 } = this.context
 
     // Wait for deploy contract
     while (true) {
-      const contractCode = await web3.eth.getCode(contractAddr)
+      const contractCode = await web3.eth.getCode(config.auctionContract)
       if (contractCode.length > 10000) {
         break
       } else {
@@ -174,12 +171,12 @@ export class OrganizerApi {
       }
     }
 
-    const l1contract = new L1Contract(web3, contractAddr)
+    const burnAuction = Layer1.getIBurnAuction(web3, config.auctionContract)
     return web3.eth.subscribe('newBlockHeaders').on('data', async () => {
-      const perdiod = await l1contract.upstream.methods
-        .CHALLENGE_PERIOD()
+      const activeCoordinator = await burnAuction.methods
+        .activeCoordinator()
         .call()
-      if (+perdiod === 30) {
+      if (+activeCoordinator) {
         this.contractsReady = true
       }
     })
@@ -360,8 +357,12 @@ export class OrganizerApi {
       try {
         const data = JSON.parse(req.body)
         const { targetTPS } = data
+        const previousLimiter = this.worker.opts.limiter
         this.worker.opts.limiter = { max: targetTPS, duration: 1000 }
-        res.send(this.worker.opts.limiter)
+        res.send({
+          previous: previousLimiter,
+          current: this.worker.opts.limiter,
+        })
       } catch (error) {
         res.status(400).send(`Error >> ${error}`)
       }
@@ -376,7 +377,7 @@ export class OrganizerApi {
       logger.info(`Server is running`)
     })
 
-    const readySubscribtion = await this.checkReady(config.zkopruContract)
+    const readySubscribtion = await this.checkReady()
     logger.info(`Waiting zkopru contracts are ready`)
     while (this.contractsReady === false) {
       await sleep(14000)
