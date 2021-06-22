@@ -9,6 +9,8 @@ import { ZkWallet } from '@zkopru/zk-wizard'
 import { getBase, startLogger } from './generator-utils'
 import { config } from './config'
 
+const organizerUrl = process.env.ORGANIZER_URL ?? 'organizer'
+
 // TODO: When transfered UTXO discovery features added, This will refactor as ETH supplier for testing wallets
 startLogger(`./BLOCKTURNNER_LOG`)
 
@@ -19,10 +21,13 @@ async function runBlockTurner() {
   logger.info(`Standby for All wallets are registered to organizer`)
   while (!ready) {
     try {
-      const registerResponse = await fetch(`http://organizer:8080/registered`, {
-        method: 'get',
-        timeout: 120,
-      })
+      const registerResponse = await fetch(
+        `http://${organizerUrl}:8080/registered`,
+        {
+          method: 'get',
+          timeout: 120,
+        },
+      )
       const walletData = await registerResponse.json()
       const walletStatus = walletData.map(wallet => {
         return wallet.from !== ''

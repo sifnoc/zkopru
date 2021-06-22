@@ -1,3 +1,4 @@
+import fs from 'fs'
 import Web3 from 'web3'
 import { Transaction, TransactionReceipt } from 'web3-core'
 import AsyncLock from 'async-lock'
@@ -125,7 +126,7 @@ export class OrganizerApi {
         const walletQueue = this.walletQueues[job.name]
         await walletQueue.add(job.name, { rawTx, rawZkTx })
       },
-      { limiter: { max: 1, duration: 10000 }, connection: this.config.queue },
+      { limiter: { max: 1, duration: 1000 }, connection: this.config.queue },
     ) // TODO : dutaion config from API
 
     this.scheduler = new QueueScheduler('maxTxQueue', {
@@ -285,6 +286,15 @@ export class OrganizerApi {
         const id = await this.walletLock.acquire('wallet', () => {
           return this.registerWallet(data.account ?? '')
         })
+        // created pre-generated uxto folder if it is not exist
+        // TODO : match path with shared volume
+        const dirList = fs.readdirSync(`/proj/packages/generator/zktx`)
+        if (!dirList.includes(`${id}`)) {
+          logger.info(
+            `Create folder for pre-generated zktx files which belongs 'wallet${id}`,
+          )
+          fs.mkdirSync(`/proj/packages/generator/zktx/${id}`)
+        }
         res.send({ ID: id })
       } else if (data.role === 'coordinator') {
         this.registerCoordinator(data.account, data.url)

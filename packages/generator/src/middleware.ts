@@ -6,6 +6,8 @@ import { logger } from '@zkopru/utils'
 import { ProposerBase, CoordinatorContext } from '@zkopru/coordinator'
 import { config } from './config'
 
+const organizerUrl = process.env.ORGANIZER_URL ?? 'organizer'
+
 // TODO: implement metric
 export class TestBlockProposer extends ProposerBase {
   lastProposed: string
@@ -85,7 +87,7 @@ export class TestBlockProposer extends ProposerBase {
     if (receipt) {
       // Additional code for Observattion over `BlockProposer` class
       if (this.lastProposed !== block.hash.toString()) {
-        const response = await fetch(`http://organizer:8080/propose`, {
+        const response = await fetch(`http://${organizerUrl}:8080/propose`, {
           method: 'post',
           body: JSON.stringify({
             timestamp: Date.now(),

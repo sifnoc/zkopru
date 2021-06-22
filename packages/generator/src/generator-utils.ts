@@ -178,44 +178,65 @@ export function getTx(rawTx) {
   return tx
 }
 
-export function getZkTx(rawZkTx) {
+export function getZkTx(tx) {
   /* eslint-disable @typescript-eslint/camelcase */
-  const zkTx = new ZkTx({
-    inflow: rawZkTx.inflow.map(flow => {
-      return {
-        nullifier: Fp.from(flow.nullifier),
-        root: Fp.from(flow.root),
-      }
-    }),
-    outflow: [
-      {
-        note: Fp.from(rawZkTx.outflow[0].note),
-        outflowType: Fp.from(rawZkTx.outflow[0].outflowType),
-      },
-      {
-        note: Fp.from(rawZkTx.outflow[1].note),
-        outflowType: Fp.from(rawZkTx.outflow[1].outflowType),
-      },
-    ],
-    fee: Fp.from(rawZkTx.fee),
+  // const zkTx = new ZkTx({
+  //   inflow: rawZkTx.inflow.map(flow => {
+  //     return {
+  //       nullifier: Fp.from(flow.nullifier),
+  //       root: Fp.from(flow.root),
+  //     }
+  //   }),
+  //   outflow: [
+  //     {
+  //       note: Fp.from(rawZkTx.outflow[0].note),
+  //       outflowType: Fp.from(rawZkTx.outflow[0].outflowType),
+  //     },
+  //     {
+  //       note: Fp.from(rawZkTx.outflow[1].note),
+  //       outflowType: Fp.from(rawZkTx.outflow[1].outflowType),
+  //     },
+  //   ],
+  //   fee: Fp.from(rawZkTx.fee),
+  //   proof: {
+  //     pi_a: [
+  //       Fp.from(rawZkTx.proof.pi_a[0]),
+  //       Fp.from(rawZkTx.proof.pi_a[1]),
+  //       Fp.from(rawZkTx.proof.pi_a[2]),
+  //     ],
+  //     pi_b: [
+  //       [Fp.from(rawZkTx.proof.pi_b[0][0]), Fp.from(rawZkTx.proof.pi_b[0][1])],
+  //       [Fp.from(rawZkTx.proof.pi_b[1][0]), Fp.from(rawZkTx.proof.pi_b[1][1])],
+  //       [Fp.from(rawZkTx.proof.pi_b[2][0]), Fp.from(rawZkTx.proof.pi_b[2][1])],
+  //     ],
+  //     pi_c: [
+  //       Fp.from(rawZkTx.proof.pi_c[0]),
+  //       Fp.from(rawZkTx.proof.pi_c[1]),
+  //       Fp.from(rawZkTx.proof.pi_c[2]),
+  //     ],
+  //   },
+  //   memo: Buffer.from(rawZkTx.memo.toString(), 'base64'), // Buffer
+  const zktx = new ZkTx({
+    inflow: tx.inflow.map(({ nullifier, root }) => ({
+      nullifier: Fp.from(nullifier),
+      root: Fp.from(root),
+    })),
+    outflow: tx.outflow.map(({ note, outflowType, data }) => ({
+      note: Fp.from(note),
+      outflowType: Fp.from(outflowType),
+      data: data ? Fp.from(data) : undefined,
+    })),
+    fee: Fp.from(tx.fee),
     proof: {
-      pi_a: [
-        Fp.from(rawZkTx.proof.pi_a[0]),
-        Fp.from(rawZkTx.proof.pi_a[1]),
-        Fp.from(rawZkTx.proof.pi_a[2]),
-      ],
-      pi_b: [
-        [Fp.from(rawZkTx.proof.pi_b[0][0]), Fp.from(rawZkTx.proof.pi_b[0][1])],
-        [Fp.from(rawZkTx.proof.pi_b[1][0]), Fp.from(rawZkTx.proof.pi_b[1][1])],
-        [Fp.from(rawZkTx.proof.pi_b[2][0]), Fp.from(rawZkTx.proof.pi_b[2][1])],
-      ],
-      pi_c: [
-        Fp.from(rawZkTx.proof.pi_c[0]),
-        Fp.from(rawZkTx.proof.pi_c[1]),
-        Fp.from(rawZkTx.proof.pi_c[2]),
-      ],
+      pi_a: tx.proof.pi_a.map((v: string) => Fp.from(v)),
+      pi_b: tx.proof.pi_b.map((a: string[]) =>
+        a.map((v: string) => Fp.from(v)),
+      ),
+      pi_c: tx.proof.pi_c.map((v: string) => Fp.from(v)),
     },
-    memo: Buffer.from(rawZkTx.memo.toString(), 'base64'), // Buffer
+    swap: tx.swap ? Fp.from(tx.swap) : undefined,
+    memo: tx.memo ? Buffer.from(tx.memo, 'base64') : undefined,
   })
-  return zkTx
+  /* eslint-enable @typescript-eslint/camelcase */
+  return zktx
 }
