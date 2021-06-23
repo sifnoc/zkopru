@@ -11,11 +11,12 @@ import { config } from './config'
 
 startLogger(`./WALLET_LOG`)
 
-const organizerUrl = process.env.ORGANIZER_URL ?? 'organizer'
+const redisIp = process.env.REDIS_IP ?? `redis`
+const organizerUrl = process.env.ORGANIZER_URL // node-fetch need absolute Url
 
 async function runGenerator() {
   logger.info('Wallet Initializing - get ID from organizer')
-  const registerResponse = await fetch(`http://${organizerUrl}:8080/register`, {
+  const registerResponse = await fetch(`${organizerUrl}/register`, {
     method: 'post',
     body: JSON.stringify({
       role: 'wallet',
@@ -30,15 +31,12 @@ async function runGenerator() {
   logger.info(`Standby for deposit are ready`)
   while (!ready) {
     try {
-      const readyResponse = await fetch(
-        `http://${organizerUrl}:8080/canDeposit`,
-        {
-          method: 'post',
-          body: JSON.stringify({
-            ID: registered.ID,
-          }),
-        },
-      )
+      const readyResponse = await fetch(`${organizerUrl}/canDeposit`, {
+        method: 'post',
+        body: JSON.stringify({
+          ID: registered.ID,
+        }),
+      })
       ready = await readyResponse.json()
     } catch (error) {
       logger.info(`Error checking organizer ready - ${error}`)
@@ -74,7 +72,10 @@ async function runGenerator() {
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
     ID: registered.ID,
-    redis: { host: 'redis', port: 6379 },
+    redis: {
+      host: redisIp,
+      port: 6379,
+    },
   }
 
   const generator = new TransferGenerator(transferGeneratorConfig)

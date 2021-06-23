@@ -144,7 +144,7 @@ export class TransferGenerator extends ZkWalletAccount {
       if (+stagedDeposit.merged === 0) {
         this.isActive = true
         // TODO: replace organizer url from system environment
-        fetch(`http://${organizerUrl}:8080/register`, {
+        fetch(`${organizerUrl}/register`, {
           method: 'post',
           body: JSON.stringify({
             ID: this.ID,
@@ -165,6 +165,7 @@ export class TransferGenerator extends ZkWalletAccount {
         'active',
         'delayed',
       )
+      /* eslint-disable no-continue */
       if (onQueue.wait + onQueue.active + onQueue.delayed >= 10) {
         await sleep(1000)
         logger.info(`queue is over wait 1sec `)

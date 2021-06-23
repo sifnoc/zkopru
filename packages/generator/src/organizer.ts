@@ -8,7 +8,7 @@ startLogger('ORGANIZER_LOG')
 
 logger.info('Organizer Initializing')
 
-const coordinatorUrl = process.env.DEFAULT_COORDINATOR ?? 'coordinator'
+const coordinatorUrl = process.env.COORDINATOR_URL ?? `http://coordinator:8888`
 
 const webSocketProvider = new Web3.providers.WebsocketProvider(
   config.testnetUrl,
@@ -23,7 +23,7 @@ const web3 = new Web3(webSocketProvider)
 const organierContext = {
   web3,
   coordinators: {
-    '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1': `http://${coordinatorUrl}:8888`,
+    '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1': coordinatorUrl,
   },
 } // Test Coordinator
 
