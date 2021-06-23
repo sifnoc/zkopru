@@ -51,7 +51,6 @@ async function testCoodinator() {
   // Override Block Generator for Observing
   coordinator.middlewares.proposer = new TestBlockProposer(coordinator.context)
 
-  logger.info(`Starting coordinaotpor`)
   coordinator.start()
 }
 
