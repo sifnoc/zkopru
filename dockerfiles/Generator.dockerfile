@@ -62,6 +62,5 @@ COPY ./packages/zk-wizard/dist /proj/packages/zk-wizard/dist
 RUN lerna clean -y --loglevel silent && lerna bootstrap
 
 COPY ./scripts/get_name.sh /proj/get_name.sh
-COPY ./scripts/wait_deploy_contracts.sh /proj/wait_deploy_contracts.sh
 
 EXPOSE 8888
