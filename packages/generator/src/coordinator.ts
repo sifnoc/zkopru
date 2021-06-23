@@ -8,6 +8,8 @@ import { getBase, startLogger } from './generator-utils'
 
 startLogger('COORDINATOR_LOG')
 
+const coordinatorUrl = process.env.COORDINATOR_HOST ?? 'coordinator:8888'
+
 async function testCoodinator() {
   logger.info('Run Test Coodinator')
   const { hdWallet, mockupDB, webSocketProvider } = await getBase(
@@ -25,8 +27,9 @@ async function testCoodinator() {
     db: mockupDB,
     slasher: slaherAccount.ethAccount,
   })
-
-  const coordinatorIp = process.env.COORDINATOR_IP
+  logger.info(
+    `UTXO tree root ${fullNode.layer2.grove.utxoTree.root().toString('hex')}`,
+  )
 
   const coordinatorConfig = {
     bootstrap: true,
@@ -35,7 +38,7 @@ async function testCoodinator() {
     maxBid: 20000,
     vhosts: '*',
     priceMultiplier: 48,
-    publicUrls: `${coordinatorIp}:8888`, // This is default params, Will be using registered coordinator address on Contract.
+    publicUrls: coordinatorUrl, // This is default params, Will be using registered coordinator address on Contract.
     port: 8888,
   }
 
