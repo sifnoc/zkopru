@@ -128,7 +128,7 @@ export class OrganizerApi {
       { limiter: { max: 1, duration: 1000 }, connection: this.config.queue },
     ) // TODO : dutaion config from API
 
-    this.scheduler = new QueueScheduler('maxTxQueue', {
+    this.scheduler = new QueueScheduler('mainTxQueue', {
       connection: this.config.queue,
     })
   }

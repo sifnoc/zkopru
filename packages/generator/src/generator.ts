@@ -25,7 +25,7 @@ interface Queues {
   walletQueue: Queue
 }
 
-const organizerUrl = process.env.ORGANIZER_URL ?? 'organizer'
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
 
 //* * Only ETH transafer zkTx generator as 1 inflow 2 outflows */
 export class TransferGenerator extends ZkWalletAccount {
@@ -168,7 +168,6 @@ export class TransferGenerator extends ZkWalletAccount {
       /* eslint-disable no-continue */
       if (onQueue.wait + onQueue.active + onQueue.delayed >= 10) {
         await sleep(1000)
-        logger.info(`queue is over wait 1sec `)
         continue
       }
 
