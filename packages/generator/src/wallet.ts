@@ -12,7 +12,7 @@ import { config } from './config'
 startLogger(`./WALLET_LOG`)
 
 const redisIp = process.env.REDIS_IP ?? `redis`
-const organizerUrl = process.env.ORGANIZER_URL // node-fetch need absolute Url
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
 
 async function runGenerator() {
   logger.info('Wallet Initializing - get ID from organizer')

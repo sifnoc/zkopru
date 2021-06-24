@@ -1,4 +1,3 @@
-import fs from 'fs'
 import Web3 from 'web3'
 import { Transaction, TransactionReceipt } from 'web3-core'
 import AsyncLock from 'async-lock'
@@ -44,12 +43,12 @@ interface GasData {
 }
 
 interface OrganizerData {
-  layer1?: {
+  layer1: {
     txSummaries: TxSummary[]
     gasTable: { [sig: string]: GasData[] }
   }
-  coordinatorData?: CoordinatorData[]
-  walletData?: WalletData[]
+  coordinatorData: CoordinatorData[]
+  walletData: WalletData[]
 }
 
 interface OrganizerContext {
@@ -140,7 +139,7 @@ export class OrganizerApi {
   }
 
   registerWallet(account: string): number {
-    const lastRegistered = this.organizerData.walletData?.length
+    const lastRegistered = this.organizerData.walletData.length
     logger.info(
       `Current length ${lastRegistered}, ${logAll(
         this.organizerData.walletData,
@@ -148,7 +147,7 @@ export class OrganizerApi {
     )
     const updatedNumber = (lastRegistered ?? 0) + 1
 
-    this.organizerData.walletData?.push({
+    this.organizerData.walletData.push({
       from: account,
       registeredId: updatedNumber,
     })
@@ -156,7 +155,7 @@ export class OrganizerApi {
       `wallet${updatedNumber}`
     ] = new Queue(`wallet${updatedNumber}`, { connection: this.config.queue })
 
-    return this.organizerData.walletData!.length
+    return this.organizerData.walletData.length
   }
 
   private async checkReady() {
@@ -185,9 +184,9 @@ export class OrganizerApi {
 
   private async watchLayer1() {
     const { web3 } = this.context
-    const { gasTable } = this.organizerData.layer1! // Initialized by constructor
+    const { gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
+    web3.eth.subscribe('newBlockHeaders').on('data', async function (data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []
@@ -273,7 +272,7 @@ export class OrganizerApi {
       // The test wallet will update address after first deposit
       if (data.ID && data.address) {
         logger.info(`updating address ${data.ID} as ${data.address}`)
-        this.organizerData.walletData?.forEach(wallet => {
+        this.organizerData.walletData.forEach(wallet => {
           if (wallet.registeredId === data.ID) {
             wallet.from = data.address
           }
@@ -286,15 +285,6 @@ export class OrganizerApi {
         const id = await this.walletLock.acquire('wallet', () => {
           return this.registerWallet(data.account ?? '')
         })
-        // created pre-generated uxto folder if it is not exist
-        // TODO : match path with shared volume
-        const dirList = fs.readdirSync(`/proj/packages/generator/zktx`)
-        if (!dirList.includes(`${id}`)) {
-          logger.info(
-            `Create folder for pre-generated zktx files which belongs 'wallet${id}`,
-          )
-          fs.mkdirSync(`/proj/packages/generator/zktx/${id}`)
-        }
         res.send({ ID: id })
       } else if (data.role === 'coordinator') {
         this.registerCoordinator(data.account, data.url)
@@ -321,7 +311,7 @@ export class OrganizerApi {
       try {
         const data = JSON.parse(req.body)
         const { from, timestamp, proposed, txcount } = data
-        this.organizerData.coordinatorData?.push({
+        this.organizerData.coordinatorData.push({
           from,
           timestamp,
           proposeNum: proposed,
@@ -334,13 +324,13 @@ export class OrganizerApi {
     })
 
     app.get('/gastable', (_, res) => {
-      res.send(this.organizerData.layer1?.gasTable)
+      res.send(this.organizerData.layer1.gasTable)
     })
 
     app.get('/tps', (_, res) => {
       let previousProposeTime: number
       if (this.organizerData.coordinatorData !== []) {
-        const response = this.organizerData.coordinatorData!.map(data => {
+        const response = this.organizerData.coordinatorData.map(data => {
           if (data.proposeNum === 0) {
             previousProposeTime = data.timestamp
           }

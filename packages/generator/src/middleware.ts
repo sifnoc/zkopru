@@ -6,7 +6,7 @@ import { logger } from '@zkopru/utils'
 import { ProposerBase, CoordinatorContext } from '@zkopru/coordinator'
 import { config } from './config'
 
-const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8888'
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
 
 // TODO: implement metric
 export class TestBlockProposer extends ProposerBase {
