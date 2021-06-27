@@ -153,7 +153,7 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
+    web3.eth.subscribe('newBlockHeaders').on('data', async function (data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []
@@ -326,7 +326,7 @@ export class OrganizerApi {
     })
 
     app.get('/currentRate', async (_, res) => {
-      res.send({ currentRate: this.organizerQueue.currentRate() })
+      res.send(this.organizerQueue.currentRate())
     })
 
     app.get('/txsInQueues', async (_, res) => {
@@ -368,6 +368,7 @@ export class OrganizerApi {
     })
 
     const readySubscribtion = await this.checkReady()
+
     logger.info(`Waiting zkopru contracts are ready`)
     while (this.contractsReady === false) {
       await sleep(14000)
