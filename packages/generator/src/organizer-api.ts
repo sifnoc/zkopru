@@ -62,21 +62,19 @@ export interface OrganizerConfig extends OrganizerQueueConfig {
 }
 
 export class OrganizerApi {
+  config: OrganizerConfig
+
   context: OrganizerContext
+
+  contractsReady: boolean
 
   organizerData: OrganizerData
 
   organizerQueue: OrganizerQueue
 
-  config: OrganizerConfig
-
   registerLock: AsyncLock
 
-  contractsReady: boolean
-
   lastDepositerID: number
-
-  currentRate: number
 
   constructor(context: OrganizerContext, config: OrganizerConfig) {
     this.context = context
@@ -95,7 +93,6 @@ export class OrganizerApi {
     this.contractsReady = false
 
     this.config = config
-    this.currentRate = 0
   }
 
   // TODO: check this method purpose
@@ -350,13 +347,7 @@ export class OrganizerApi {
         logger.info(`selectable rates ${logAll(rateNames)}`)
 
         if (!rateNames.includes(selectRate)) {
-          res
-            .status(406)
-            .send(
-              `cannot select rate ${selectRate}, can selectable names are ${logAll(
-                rateNames,
-              )}`,
-            )
+          res.status(406).send(`only selectable rates are ${logAll(rateNames)}`)
           return
         }
 

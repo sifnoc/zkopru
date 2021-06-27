@@ -59,7 +59,7 @@ export interface OrganizerQueueConfig {
 }
 
 export class OrganizerQueue {
-  private currentQueue: string
+  private currentQueue: string // currentRate
 
   queues: Queues
 
@@ -98,7 +98,9 @@ export class OrganizerQueue {
       subScheduler[queueName] = new QueueScheduler(queueName, { connection })
     }
 
-    this.currentQueue = 'fast' // TODO: how to set default queue name
+    const defaultRate = this.config.rates[0]
+
+    this.currentQueue = defaultRate.name ?? defaultRate.max.toString()
 
     this.queues = {
       main: new Queue('mainQueue', { connection }),
@@ -127,19 +129,23 @@ export class OrganizerQueue {
   }
 
   currentRate() {
-    if (this.currentQueue === 'mainQueue') {
-      return 0
+    const { limiter } = this.workers.sub[this.currentQueue].opts
+    return {
+      queueName: this.currentQueue,
+      max: limiter?.max,
+      duration: limiter?.duration,
+      targetTPS: (limiter!.max * 1000) / limiter!.duration,
     }
-    const currentLimiter = this.workers.sub[this.currentQueue].opts.limiter!
-    return currentLimiter.max / currentLimiter?.duration
   }
 
-  selectRate(queueName: string) {
+  selectRate(queue: string | number) {
+    const queueName = queue.toString()
     if (!Object.keys(this.queues.sub).includes(queueName)) {
       return new Error(`There are not exist the queueName ${queueName}`)
     }
+    const previousQueue = this.currentQueue
     this.currentQueue = queueName
-    return queueName
+    return { previous: previousQueue, current: this.currentQueue }
   }
 
   addWalletQueue(walletName: string) {

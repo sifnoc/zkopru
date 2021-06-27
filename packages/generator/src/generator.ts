@@ -89,19 +89,12 @@ export class TransferGenerator extends ZkWalletAccount {
       async (job: ZkTxJob) => {
         logger.info(`worker received data ${logAll(job.data)}`)
         const { tx, zkTx } = job.data
-        // TODO: tx and zkTx need methods. so have to convert to zktx totototototototo
-
-        const txSalt = tx.inflow[0].salt
-        logger.info(`Send ZkTx with salt ${txSalt} to layer2`)
+        const txSalt = tx.inflow[0].salt // TODO : use this for following the sequence as the salt
         const response = await this.sendLayer2Tx(getZkTx(zkTx))
         if (response.status !== 200) {
-          throw Error(await response.text())
-        } else {
-          this.lastSalt = txSalt.toNumber() // TODO: check necess of lastSalt for
-          logger.info(
-            `Sent ZkTx Successfully, update lastSalt as ${this.lastSalt}`,
-          )
+          this.lastSalt = txSalt.toNumber()
           await this.unlockUtxos(tx.inflow)
+          throw Error(await response.text())
         }
       },
       { connection: this.queueConnection },
