@@ -1,8 +1,8 @@
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq'
 import { RawTx, ZkTx } from '@zkopru/transaction'
-import { logger } from '~utils/logger'
 
 export type ZkTxData = { tx: RawTx; zkTx: ZkTx }
+
 export type ZkTxJob = Job<ZkTxData, any, string>
 export type ZkTxQueue = Queue<ZkTxData, any, string>
 export type ZkTxWorker = Worker<ZkTxData, any, string>
