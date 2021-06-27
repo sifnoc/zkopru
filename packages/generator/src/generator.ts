@@ -168,15 +168,24 @@ export class TransferGenerator extends ZkWalletAccount {
     while (this.isActive) {
       // TODO: how to recognize target queue is changed?
       // get TPS from organizer... or get sum of all tx in wait active delayes...
-      const onQueue = await this.queues.mainQueue.getJobCounts(
-        'wait',
-        'active',
-        'delayed',
-      )
+      const response = await fetch(`${organizerUrl}/txsInQueues`, {
+        method: 'get',
+        timeout: 120,
+      })
+      const { currentTxs } = await response.json()
+
+      // const onQueue = await this.queues.mainQueue.getJobCounts(
+      //   'wait',
+      //   'active',
+      //   'delayed',
+      // )
       /* eslint-disable no-continue */
-      if (onQueue.wait + onQueue.active + onQueue.delayed >= 10) {
+      if (currentTxs >= 10) {
+        logger.info(`queue is full wait 1 sec`)
         await sleep(1000)
         continue
+      } else {
+        logger.info(`current job count ${currentTxs}`)
       }
 
       const unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)

@@ -258,7 +258,7 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function (data) {
+    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []
@@ -431,7 +431,20 @@ export class OrganizerApi {
     })
 
     app.get('/currentQueue', async (_, res) => {
-      res.send(this.queueSelect)
+      res.send({ selectedQueue: this.queueSelect })
+    })
+
+    app.get('/txsInQueues', async (_, res) => {
+      let result = 0
+      for (const queueName of Object.keys(this.subQueues)) {
+        const jobCount = await this.subQueues[queueName].getJobCounts(
+          'wait',
+          'active',
+          'delayed',
+        )
+        result += jobCount.wait + jobCount.active + jobCount.delayed
+      }
+      res.status(200).send({ currentTxs: result })
     })
 
     // TODO : create metric with prom-client
