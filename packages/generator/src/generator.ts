@@ -1,7 +1,7 @@
 // import fs from 'fs'
 import BN from 'bn.js'
 import { toWei } from 'web3-utils'
-import { Queue, Worker, ConnectionOptions, Job, QueueScheduler } from 'bullmq'
+import { Queue, Worker, ConnectionOptions, QueueScheduler } from 'bullmq'
 import fetch from 'node-fetch'
 
 import { Fp } from '@zkopru/babyjubjub'
@@ -9,8 +9,9 @@ import { UtxoStatus, Utxo } from '@zkopru/transaction'
 import { HDWallet } from '@zkopru/account'
 import { logger, sleep } from '@zkopru/utils'
 import { ZkWalletAccount, ZkWalletAccountConfig } from '@zkopru/zk-wizard'
+import { ZkTxData, ZkTxJob } from './organizer-api'
 import { TestTxBuilder } from './testbuilder'
-import { jsonToZkTx, logAll } from './generator-utils'
+import { logAll, getZkTx } from './generator-utils'
 
 export interface GeneratorConfig {
   hdWallet: HDWallet
@@ -21,8 +22,8 @@ export interface GeneratorConfig {
 }
 
 interface Queues {
-  mainQueue: Queue
-  walletQueue: Queue
+  mainQueue: Queue<ZkTxData, any, string>
+  walletQueue: Queue<ZkTxData, any, string>
 }
 
 const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
@@ -85,25 +86,30 @@ export class TransferGenerator extends ZkWalletAccount {
     logger.info(`Worker started`)
     const worker = new Worker(
       `wallet${this.ID}`,
-      async (job: Job) => {
-        const { rawTx, rawZkTx } = job.data
-        const { tx, zkTx } = jsonToZkTx(rawTx, rawZkTx)
+      async (job: ZkTxJob) => {
+        logger.info(`worker received data ${logAll(job.data)}`)
+        const { tx, zkTx } = job.data
+        // TODO: tx and zkTx need methods. so have to convert to zktx totototototototo
 
         const txSalt = tx.inflow[0].salt
-        const response = await this.sendLayer2Tx(zkTx)
+        logger.info(`Send ZkTx with salt ${txSalt} to layer2`)
+        const response = await this.sendLayer2Tx(getZkTx(zkTx))
         if (response.status !== 200) {
           throw Error(await response.text())
         } else {
-          this.lastSalt = txSalt.toNumber()
+          this.lastSalt = txSalt.toNumber() // TODO: check necess of lastSalt for
+          logger.info(
+            `Sent ZkTx Successfully, update lastSalt as ${this.lastSalt}`,
+          )
           await this.unlockUtxos(tx.inflow)
         }
       },
       { connection: this.queueConnection },
     )
 
-    worker.on('completed', (job: Job) => {
+    worker.on('completed', (job: ZkTxJob) => {
       logger.info(
-        `Worker job salt ${logAll(job.data.rawTx.inflow[0].salt)} completed`,
+        `Worker job salt ${logAll(job.data.tx.inflow[0].salt)} completed`,
       )
     })
 
@@ -136,7 +142,7 @@ export class TransferGenerator extends ZkWalletAccount {
     }
 
     while (!this.isActive) {
-      await sleep(1000)
+      await sleep(5000)
       const stagedDeposit = await this.node.layer1.upstream.methods
         .stagedDeposits()
         .call()
@@ -144,7 +150,7 @@ export class TransferGenerator extends ZkWalletAccount {
       if (+stagedDeposit.merged === 0) {
         this.isActive = true
         // TODO: replace organizer url from system environment
-        fetch(`${organizerUrl}/register`, {
+        const id = await fetch(`${organizerUrl}/register`, {
           method: 'post',
           body: JSON.stringify({
             ID: this.ID,
@@ -152,7 +158,7 @@ export class TransferGenerator extends ZkWalletAccount {
           }),
         })
         logger.info(
-          `Deposit Tx is processed, then registered this wallet to Organizer`,
+          `Deposit Tx is processed, then registered as ${id} this wallet to Organizer`,
         )
       }
     }
@@ -160,6 +166,8 @@ export class TransferGenerator extends ZkWalletAccount {
     this.startWorker()
 
     while (this.isActive) {
+      // TODO: how to recognize target queue is changed?
+      // get TPS from organizer... or get sum of all tx in wait active delayes...
       const onQueue = await this.queues.mainQueue.getJobCounts(
         'wait',
         'active',
@@ -171,7 +179,6 @@ export class TransferGenerator extends ZkWalletAccount {
         continue
       }
 
-      logger.info(`get unspent UTxo`)
       const unspentUTXO = await this.getUtxos(this.account, UtxoStatus.UNSPENT)
 
       if (unspentUTXO.length === 0) {
@@ -179,8 +186,6 @@ export class TransferGenerator extends ZkWalletAccount {
         await sleep(5000)
         continue
       }
-
-      logger.info(`check sendable utxo is`)
 
       // All transaction are self transaction with same amount, only unique things is salt.
       let sendableUtxo: Utxo | undefined
@@ -230,10 +235,7 @@ export class TransferGenerator extends ZkWalletAccount {
           const zkTx = await this.shieldTx({ tx })
           // fs.writeFileSync(`/proj/packages/generator/zktx/${this.ID}/${tx.inflow[0].salt.toString(10)}.json`, JSON.stringify({ rawTx: tx, rawZkTx: zkTx }))
           this.usedUtxoSalt.add(sendableUtxo.salt.toNumber())
-          this.queues.mainQueue.add(`wallet${this.ID}`, {
-            rawTx: tx,
-            rawZkTx: zkTx,
-          })
+          this.queues.mainQueue.add(`wallet${this.ID}`, { tx, zkTx })
         } catch (err) {
           logger.error(err)
         }

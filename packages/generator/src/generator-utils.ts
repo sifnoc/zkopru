@@ -124,19 +124,6 @@ export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
 }
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
-// TODO : replace db or something
-export function fileToZkTx(filename: string) {
-  const { rawTx, rawZkTx } = JSON.parse(fs.readFileSync(filename).toString())
-  return jsonToZkTx(rawTx, rawZkTx)
-}
-
-export function jsonToZkTx(rawTx, rawZkTx) {
-  const tx = getTx(rawTx)
-  const zkTx = getZkTx(rawZkTx)
-
-  return { tx, zkTx }
-}
-
 export function getTx(rawTx) {
   if (rawTx === undefined) {
     throw Error(`rawTx is undefined, please check queue data`)
