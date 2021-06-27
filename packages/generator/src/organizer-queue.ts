@@ -1,5 +1,29 @@
 import { Job, Queue, QueueScheduler, Worker } from 'bullmq'
 import { RawTx, ZkTx } from '@zkopru/transaction'
+import { logger } from '@zkopru/utils'
+
+/*
+Organizer Queue has two types of queue, 'main' and 'sub'.
+
+The main queue always accepts ZkTx from the wallets,
+
+then following the current rate, forwards to the 'sub' queue which has a worker with the rate-limiting.
+
+Let assume that there are 2 sub queues, one has 10 tps rate, another one has 1 tps rate.
+
+current selected 10 tps rate, the main queue is going to forward zktx to the sub queue which has 10 tps rate worker
+
+- 10 tps rate
+  [ generator ]   [            organizer            ]   [ generator ]
+  Wallet1(ZkTx) → Main-Queue → Sub-Queue(10 tps rate) → Wallet1-Queue
+  Wallet2(ZkTx) ⬈              Sub-Queue( 1 tps rate) ⬊ Wallet2-Queue
+
+- 1 tps rate
+  Wallet1(ZkTx) → Main-Queue   Sub-Queue(10 tps rate) ⬈ Wallet1-Queue
+  Wallet2(ZkTx) ⬈            ⬊ Sub-Queue( 1 tps rate) → Wallet2-Queue 
+
+bullmq does not working with newly created queue or workers after initiated
+*/
 
 export type ZkTxData = { tx: RawTx; zkTx: ZkTx }
 
@@ -10,6 +34,7 @@ export type ZkTxWorker = Worker<ZkTxData, any, string>
 interface Queues {
   main: ZkTxQueue
   sub: { [key: string]: ZkTxQueue }
+  wallet: { [key: string]: ZkTxQueue }
 }
 
 interface Workers {
@@ -28,34 +53,13 @@ interface QueueRate {
   duration?: number
 }
 
-interface OrganizerQueueConfig {
+export interface OrganizerQueueConfig {
   connection: { host: string; port: number }
   rates: QueueRate[]
 }
 
-/*
-Organizer Queue has two types of queue, 'main' and 'sub'.
-
-The main queue always accepts ZkTx from the wallets,
-
-then following the current rate, forwards to the 'sub' queue which has a worker with the rate-limiting.
-
-Let assume that there are 2 sub queues, one has 10 tps rate, another one has 1 tps rate.
-
-current selected 10 tps rate, the main queue is going to forward zktx to the sub queue which has 10 tps rate worker
-
-- 10 tps rate
-  Wallet1(ZkTx) → Main-Queue → Sub-Queue(10 tps rate) → Wallet1
-  Wallet2(ZkTx) ⬈              Sub-Queue( 1 tps rate) ⬊ Wallet2
-
-- 1 tps rate
-  Wallet1(ZkTx) → Main-Queue   Sub-Queue(10 tps rate) ⬈ Wallet1
-  Wallet2(ZkTx) ⬈            ⬊ Sub-Queue( 1 tps rate) → Wallet2
-
-bullmq does not working with newly created queue or workers after initiated
-*/
 export class OrganizerQueue {
-  private currentQueue: 'mainQueue' | string
+  private currentQueue: string
 
   queues: Queues
 
@@ -63,12 +67,16 @@ export class OrganizerQueue {
 
   scheduler: Schedulers
 
+  config: OrganizerQueueConfig
+
   constructor(config: OrganizerQueueConfig) {
-    const { connection } = config
+    this.config = config
 
     const subQueues = {}
     const subWorkers = {}
     const subScheduler = {}
+
+    const { connection } = config
 
     for (const rate of config.rates) {
       const queueName = rate.name ?? rate.max.toString()
@@ -79,7 +87,7 @@ export class OrganizerQueue {
       subWorkers[queueName] = new Worker<ZkTxData, any, string>(
         queueName,
         async (job: ZkTxJob) => {
-          this.queues[queueName].add(job.name, job.data)
+          this.queues.wallet[job.name].add(job.name, job.data)
         },
         {
           limiter: { max: rate.max, duration: rate.duration ?? 1000 },
@@ -90,18 +98,22 @@ export class OrganizerQueue {
       subScheduler[queueName] = new QueueScheduler(queueName, { connection })
     }
 
-    this.currentQueue = 'mainQueue'
+    this.currentQueue = 'fast' // TODO: how to set default queue name
 
     this.queues = {
-      main: new Queue('mainQueue'),
+      main: new Queue('mainQueue', { connection }),
       sub: subQueues,
+      wallet: {},
     }
 
     this.workers = {
       main: new Worker<ZkTxData, any, string>(
         'mainQueue',
         async (job: ZkTxJob) => {
-          this.queues[this.currentQueue].add(job.name, job.data)
+          logger.info(
+            `mainQueue worker job received jobName: ${job.name} jogData ${job.data}`,
+          )
+          this.queues.sub[this.currentQueue].add(job.name, job.data)
         },
         { connection },
       ),
@@ -128,6 +140,13 @@ export class OrganizerQueue {
     }
     this.currentQueue = queueName
     return queueName
+  }
+
+  addWalletQueue(walletName: string) {
+    this.queues.wallet[walletName] = new Queue(walletName, {
+      connection: this.config.connection,
+    })
+    return Object.keys(this.queues.wallet)
   }
 
   async jobsInQueue(queueName: string) {

@@ -1,11 +1,10 @@
 import AsyncLock from 'async-lock'
 import express from 'express'
-import { Job, Queue, Worker, QueueScheduler } from 'bullmq'
 import Web3 from 'web3'
 import { Transaction, TransactionReceipt } from 'web3-core'
-import { RawTx, ZkTx } from '@zkopru/transaction'
 import { logger, sleep } from '@zkopru/utils'
 import { Layer1 } from '@zkopru/contracts'
+import { OrganizerQueue, OrganizerQueueConfig } from './organizer-queue'
 import { logAll } from './generator-utils'
 import { config } from './config'
 
@@ -58,27 +57,16 @@ interface OrganizerContext {
   coordinators: CoordinatorUrls
 }
 
-interface QueueConnection {
-  host: string
-  port: number
-}
-
-interface OrganizerConfig {
-  queue: QueueConnection
-  port: number
-}
-
-export type ZkTxData = { tx: RawTx; zkTx: ZkTx }
-export type ZkTxJob = Job<ZkTxData, any, string>
-
-interface WalletQueues {
-  [key: string]: Queue<ZkTxData, any, string>
+export interface OrganizerConfig extends OrganizerQueueConfig {
+  organizerPort?: number
 }
 
 export class OrganizerApi {
   context: OrganizerContext
 
   organizerData: OrganizerData
+
+  organizerQueue: OrganizerQueue
 
   config: OrganizerConfig
 
@@ -88,23 +76,9 @@ export class OrganizerApi {
 
   lastDepositerID: number
 
-  workerReady: boolean
+  currentRate: number
 
-  walletQueues: WalletQueues
-
-  worker: Worker
-
-  subQueues: WalletQueues
-
-  queueSelect: 'fast' | 'slow'
-
-  subWorker1: Worker
-
-  subWorker2: Worker
-
-  schedulers: QueueScheduler[]
-
-  constructor(context: OrganizerContext, config?: OrganizerConfig) {
+  constructor(context: OrganizerContext, config: OrganizerConfig) {
     this.context = context
     this.organizerData = {
       layer1: {
@@ -115,91 +89,13 @@ export class OrganizerApi {
       walletData: [],
     } // Initialize
 
+    this.organizerQueue = new OrganizerQueue(config)
     this.registerLock = new AsyncLock()
     this.lastDepositerID = 0
     this.contractsReady = false
-    this.workerReady = false // TODO : check this is necessary..
 
-    this.config = config ?? {
-      queue: { host: 'localhost', port: 6379 },
-      port: 8080,
-    }
-
-    this.walletQueues = {}
-
-    this.queueSelect = 'fast'
-
-    this.subQueues = {
-      fast: new Queue('fastTxQueue', { connection: this.config.queue }),
-      slow: new Queue('slowTxQueue', { connection: this.config.queue }),
-    }
-
-    this.worker = new Worker(
-      'mainTxQueue',
-      async (job: Job) => {
-        if (this.queueSelect === 'fast') {
-          await this.subQueues.fast.add(job.name, job.data)
-        } else if (this.queueSelect === 'slow') {
-          await this.subQueues.slow.add(job.name, job.data)
-        }
-      },
-      { connection: this.config.queue },
-    ) // TODO : dutaion config from API
-
-    this.subWorker1 = new Worker(
-      'fastTxQueue',
-      async (job: ZkTxJob) => {
-        logger.info(
-          `fastTxQueue received job name ${job.name}  salt ${job.data.tx.inflow[0].salt}`,
-        )
-        if (this.queueSelect !== 'fast') {
-          const delayedJobsCount = await this.subQueues.fast.getDelayedCount()
-          logger.info(
-            `current delayed job in fastTxQueue : ${delayedJobsCount}`,
-          )
-          const delayedJobs = await this.subQueues.fast.getDelayed()
-          this.subQueues[this.queueSelect].addBulk(delayedJobs)
-        } else {
-          const walletQueue = this.walletQueues[job.name]
-          logger.info(
-            `job name : ${job.name}, Queue name : ${walletQueue.name}`,
-          )
-          await walletQueue.add(job.name, job.data)
-        }
-      },
-      { limiter: { max: 5, duration: 10000 }, connection: this.config.queue },
-    ) // TODO : dutaion config from API
-
-    this.subWorker2 = new Worker(
-      'slowTxQueue',
-      async (job: ZkTxJob) => {
-        logger.info(
-          `slowTxQueue received job name ${job.name}  salt ${job.data.tx.inflow[0].salt}`,
-        )
-        if (this.queueSelect !== 'slow') {
-          const delayedJobsCount = await this.subQueues.slow.getDelayedCount()
-          logger.info(
-            `current delayed job in slowTxQueue : ${delayedJobsCount}`,
-          )
-          const delayedJobs = await this.subQueues.slow.getDelayed()
-          delayedJobs.forEach(async job => {
-            await this.subQueues[this.queueSelect].add(job.name, job.data)
-          })
-        } else {
-          const walletQueue = this.walletQueues[job.name]
-          await walletQueue.add(job.name, job.data)
-        }
-      },
-      { limiter: { max: 1, duration: 10000 }, connection: this.config.queue },
-    ) // TODO : dutaion config from API
-
-    this.schedulers = ['mainTxQueue', 'fastTxQueue', 'slowTxQueue'].map(
-      queueName => {
-        return new QueueScheduler(queueName, {
-          connection: this.config.queue,
-        })
-      },
-    )
+    this.config = config
+    this.currentRate = 0
   }
 
   // TODO: check this method purpose
@@ -223,9 +119,11 @@ export class OrganizerApi {
       from: account,
       registeredId: updatedNumber,
     })
-    this.walletQueues[
-      `wallet${updatedNumber}`
-    ] = new Queue(`wallet${updatedNumber}`, { connection: this.config.queue })
+
+    const allWalletQueues = this.organizerQueue.addWalletQueue(
+      `wallet${updatedNumber}`,
+    )
+    logger.info(`registered wallet queues are ${logAll(allWalletQueues)}`)
 
     return this.organizerData.walletData.length
   }
@@ -430,41 +328,42 @@ export class OrganizerApi {
       }
     })
 
-    app.get('/currentQueue', async (_, res) => {
-      res.send({ selectedQueue: this.queueSelect })
+    app.get('/currentRate', async (_, res) => {
+      res.send({ currentRate: this.organizerQueue.currentRate() })
     })
 
     app.get('/txsInQueues', async (_, res) => {
-      let result = 0
-      for (const queueName of Object.keys(this.subQueues)) {
-        const jobCount = await this.subQueues[queueName].getJobCounts(
-          'wait',
-          'active',
-          'delayed',
-        )
-        result += jobCount.wait + jobCount.active + jobCount.delayed
-      }
-      res.status(200).send({ currentTxs: result })
+      const remainJobs = await this.organizerQueue.allRemainingJobs()
+      res.status(200).send({ currentTxs: remainJobs })
     })
 
     // TODO : create metric with prom-client
-    // TODO: Testing
-    app.post('/targetTPS', async (req, res) => {
+    // TODO: accept name or rate
+    app.post('/selectRate', async (req, res) => {
       try {
         const data = JSON.parse(req.body)
-        const { targetTPS } = data
+        const { selectRate } = data
 
-        if (targetTPS === 'fast') {
-          res.send({ previous: this.queueSelect, changeTo: targetTPS })
-          this.queueSelect = 'fast'
-        } else if (targetTPS === 'slow') {
-          res.send({ previous: this.queueSelect, changeTo: targetTPS })
-          this.queueSelect = 'slow'
-        } else {
-          res.send(`You can only 'slow' or 'fast'`)
+        const rateNames = this.organizerQueue.config.rates.map(rate => {
+          return rate.name
+        })
+        logger.info(`selectable rates ${logAll(rateNames)}`)
+
+        if (!rateNames.includes(selectRate)) {
+          res
+            .status(406)
+            .send(
+              `cannot select rate ${selectRate}, can selectable names are ${logAll(
+                rateNames,
+              )}`,
+            )
+          return
         }
+
+        const result = this.organizerQueue.selectRate(selectRate)
+        res.send(result)
       } catch (error) {
-        res.status(400).send(`Error >> ${error}`)
+        res.status(400).send(`${error}`)
       }
     })
 
@@ -473,7 +372,7 @@ export class OrganizerApi {
       return res.sendStatus(200)
     })
 
-    app.listen(this.config.port, () => {
+    app.listen(this.config.organizerPort, () => {
       logger.info(`Server is running`)
     })
 

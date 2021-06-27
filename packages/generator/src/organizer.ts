@@ -2,7 +2,7 @@ import Web3 from 'web3'
 import { logger } from '@zkopru/utils'
 import { startLogger } from './generator-utils'
 import { config } from './config'
-import { OrganizerApi } from './organizer-api'
+import { OrganizerApi, OrganizerConfig } from './organizer-api'
 
 startLogger('ORGANIZER_LOG')
 
@@ -27,9 +27,13 @@ const organierContext = {
   },
 } // Test Coordinator
 
-const organizerConfig = {
-  queue: { host: 'redis', port: 6379 },
-  port: 8080,
+const organizerConfig: OrganizerConfig = {
+  connection: { host: 'redis', port: 6379 },
+  rates: [
+    { name: 'fast', max: 1, duration: 1000 },
+    { name: 'slow', max: 1, duration: 10000 },
+  ],
+  organizerPort: 8080,
 }
 
 const organizer = new OrganizerApi(organierContext, organizerConfig)

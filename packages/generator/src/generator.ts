@@ -9,7 +9,7 @@ import { UtxoStatus, Utxo } from '@zkopru/transaction'
 import { HDWallet } from '@zkopru/account'
 import { logger, sleep } from '@zkopru/utils'
 import { ZkWalletAccount, ZkWalletAccountConfig } from '@zkopru/zk-wizard'
-import { ZkTxData, ZkTxJob } from './organizer-api'
+import { ZkTxData, ZkTxJob } from './organizer-queue'
 import { TestTxBuilder } from './testbuilder'
 import { logAll, getZkTx } from './generator-utils'
 
@@ -75,7 +75,7 @@ export class TransferGenerator extends ZkWalletAccount {
     }
 
     this.queues = {
-      mainQueue: new Queue('mainTxQueue', { connection: this.queueConnection }),
+      mainQueue: new Queue('mainQueue', { connection: this.queueConnection }),
       walletQueue: new Queue(`wallet${this.ID}`, {
         connection: this.queueConnection,
       }),
