@@ -10,6 +10,7 @@ import { getBase, startLogger } from './generator-utils'
 startLogger('COORDINATOR_LOG')
 
 const coordinatorHost = process.env.COORDINATOR_HOST ?? 'coordinator'
+const coordinatorPort = 8888
 
 async function dnsLookup(hostname: string) {
   return new Promise((resolve, reject) => {
@@ -41,7 +42,6 @@ async function testCoodinator() {
   // Have to convert single string hostname to IP
   const coordinatorIp = await dnsLookup(coordinatorHost)
 
-  const port = 8888
   const coordinatorConfig = {
     bootstrap: true,
     address: config.zkopruContract,
@@ -49,8 +49,8 @@ async function testCoodinator() {
     maxBid: 20000,
     vhosts: '*',
     priceMultiplier: 48,
-    publicUrls: `${coordinatorIp}:${port}`, // This is default params, Will be using registered coordinator address on Contract.
-    port,
+    publicUrls: `${coordinatorIp}:${coordinatorPort}`, // This is default params, Will be using registered coordinator address on Contract.
+    port: coordinatorPort,
   }
 
   const coordinator = new Coordinator(

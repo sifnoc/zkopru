@@ -24,4 +24,5 @@ EXPOSE 5000
 COPY ./keys /proj/keys
 COPY ./testnet-key /proj/testnet-key
 COPY ./testnet-pass /proj/testnet-pass
+COPY ./run_geth.sh /proj/run_geth.sh
 CMD ["geth", "--dev", "--networkid", "20200406", "--datadir", "data", "--rpc", "--rpcaddr", "0.0.0.0", "--rpccorsdomain", "*","--http.api", "eth,net,web3,personal,miner", "--nousb"]
