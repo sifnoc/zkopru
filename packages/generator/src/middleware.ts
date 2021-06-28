@@ -6,6 +6,8 @@ import { logger } from '@zkopru/utils'
 import { ProposerBase, CoordinatorContext } from '@zkopru/coordinator'
 import { config } from './config'
 
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
+
 // TODO: implement metric
 export class TestBlockProposer extends ProposerBase {
   lastProposed: string
@@ -62,8 +64,8 @@ export class TestBlockProposer extends ProposerBase {
         from: this.context.account.address,
       })
       logger.info(`Propose estimated gas ${expectedGas}`)
-      expectedGas = 85000
-      logger.info(`Set Gas ${expectedGas}`)
+      expectedGas = 1000000
+      logger.info(`Set Gas as ${expectedGas}`)
     } catch (err) {
       logger.warn(`propose() fails. Skip gen block`)
       return undefined
@@ -85,7 +87,7 @@ export class TestBlockProposer extends ProposerBase {
     if (receipt) {
       // Additional code for Observattion over `BlockProposer` class
       if (this.lastProposed !== block.hash.toString()) {
-        const response = await fetch(`http://organizer:8080/propose`, {
+        const response = await fetch(`${organizerUrl}/propose`, {
           method: 'post',
           body: JSON.stringify({
             timestamp: Date.now(),

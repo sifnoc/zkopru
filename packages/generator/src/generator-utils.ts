@@ -82,7 +82,7 @@ export function logAll(Object) {
 }
 
 export function startLogger(fileName: string) {
-  const writeStream = fs.createWriteStream(`/${fileName}`)
+  const writeStream = fs.createWriteStream(`./${fileName}`)
   logStream.addStream(writeStream)
   const pretty = prettier({
     translateTime: false,
@@ -123,12 +123,11 @@ export async function getEthUtxo(wallet: ZkWallet, account: ZkAccount) {
   return unSpentUtxo
 }
 
-/* eslint-disable @typescript-eslint/camelcase */
-/* eslint-disable jest/no-hooks */
-export function jsonToZkTx(filename: string) {
-  // TODO : replace db or something
-  const { rawTx, rawZkTx } = JSON.parse(fs.readFileSync(filename).toString())
-
+/* eslint-disable @typescript-eslint/no-use-before-define */
+export function getTx(rawTx) {
+  if (rawTx === undefined) {
+    throw Error(`rawTx is undefined, please check queue data`)
+  }
   const owner = ZkAddress.from(
     Fp.from(rawTx.inflow[0].owner.PubSK),
     Point.from(rawTx.inflow[0].owner.N.x, rawTx.inflow[0].owner.N.y),
@@ -140,9 +139,9 @@ export function jsonToZkTx(filename: string) {
         owner,
         Fp.from(flow.salt),
         {
-          eth: Fp.from(flow.eth),
-          tokenAddr: Fp.from(flow.tokenAddr),
-          erc20Amount: Fp.from(flow.erc20Amount),
+          eth: Fp.from(flow.asset.eth),
+          tokenAddr: Fp.from(flow.asset.tokenAddr),
+          erc20Amount: Fp.from(flow.asset.erc20Amount),
           nft: Fp.from(flow.asset.nft),
         },
         flow.status,
@@ -153,9 +152,9 @@ export function jsonToZkTx(filename: string) {
         owner,
         Fp.from(flow.salt),
         {
-          eth: Fp.from(flow.eth),
-          tokenAddr: Fp.from(flow.tokenAddr),
-          erc20Amount: Fp.from(flow.erc20Amount),
+          eth: Fp.from(flow.asset.eth),
+          tokenAddr: Fp.from(flow.asset.tokenAddr),
+          erc20Amount: Fp.from(flow.asset.erc20Amount),
           nft: Fp.from(flow.asset.nft),
         },
         flow.status,
@@ -163,43 +162,32 @@ export function jsonToZkTx(filename: string) {
     }),
     fee: Fp.from(rawTx.fee),
   }
+  return tx
+}
 
-  const zkTx = new ZkTx({
-    inflow: rawZkTx.inflow.map(flow => {
-      return {
-        nullifier: Fp.from(flow.nullifier),
-        root: Fp.from(flow.root),
-      }
-    }),
-    outflow: [
-      {
-        note: Fp.from(rawZkTx.outflow[0].note),
-        outflowType: Fp.from(rawZkTx.outflow[0].outflowType),
-      },
-      {
-        note: Fp.from(rawZkTx.outflow[1].note),
-        outflowType: Fp.from(rawZkTx.outflow[1].outflowType),
-      },
-    ],
-    fee: Fp.from(rawZkTx.fee),
+export function getZkTx(tx) {
+  /* eslint-disable @typescript-eslint/camelcase */
+  const zktx = new ZkTx({
+    inflow: tx.inflow.map(({ nullifier, root }) => ({
+      nullifier: Fp.from(nullifier),
+      root: Fp.from(root),
+    })),
+    outflow: tx.outflow.map(({ note, outflowType, data }) => ({
+      note: Fp.from(note),
+      outflowType: Fp.from(outflowType),
+      data: data ? Fp.from(data) : undefined,
+    })),
+    fee: Fp.from(tx.fee),
     proof: {
-      pi_a: [
-        Fp.from(rawZkTx.proof.pi_a[0]),
-        Fp.from(rawZkTx.proof.pi_a[1]),
-        Fp.from(rawZkTx.proof.pi_a[2]),
-      ],
-      pi_b: [
-        [Fp.from(rawZkTx.proof.pi_b[0][0]), Fp.from(rawZkTx.proof.pi_b[0][1])],
-        [Fp.from(rawZkTx.proof.pi_b[1][0]), Fp.from(rawZkTx.proof.pi_b[1][1])],
-        [Fp.from(rawZkTx.proof.pi_b[2][0]), Fp.from(rawZkTx.proof.pi_b[2][1])],
-      ],
-      pi_c: [
-        Fp.from(rawZkTx.proof.pi_c[0]),
-        Fp.from(rawZkTx.proof.pi_c[1]),
-        Fp.from(rawZkTx.proof.pi_c[2]),
-      ],
+      pi_a: tx.proof.pi_a.map((v: string) => Fp.from(v)),
+      pi_b: tx.proof.pi_b.map((a: string[]) =>
+        a.map((v: string) => Fp.from(v)),
+      ),
+      pi_c: tx.proof.pi_c.map((v: string) => Fp.from(v)),
     },
-    memo: Buffer.from(rawZkTx.memo.toString(), 'base64'), // Buffer
+    swap: tx.swap ? Fp.from(tx.swap) : undefined,
+    memo: tx.memo ? Buffer.from(tx.memo, 'base64') : undefined,
   })
-  return { tx, zkTx }
+  /* eslint-enable @typescript-eslint/camelcase */
+  return zktx
 }

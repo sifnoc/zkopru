@@ -1,4 +1,5 @@
 /* eslint-disable no-case-declarations */
+import dns from 'dns'
 import { FullNode } from '@zkopru/core'
 import { Coordinator } from '@zkopru/coordinator'
 import { logger } from '@zkopru/utils'
@@ -7,6 +8,17 @@ import { TestBlockProposer } from './middleware'
 import { getBase, startLogger } from './generator-utils'
 
 startLogger('COORDINATOR_LOG')
+
+const coordinatorHost = process.env.COORDINATOR_HOST ?? 'coordinator'
+
+async function dnsLookup(hostname: string) {
+  return new Promise((resolve, reject) => {
+    dns.lookup(hostname, (err, address) => {
+      if (err) reject(err)
+      resolve(address)
+    })
+  })
+}
 
 async function testCoodinator() {
   logger.info('Run Test Coodinator')
@@ -25,12 +37,11 @@ async function testCoodinator() {
     db: mockupDB,
     slasher: slaherAccount.ethAccount,
   })
-  logger.info(
-    `UTXO tree root ${fullNode.layer2.grove.utxoTree.root().toString('hex')}`,
-  )
 
-  const coordinatorIp = process.env.COORDINATOR_IP
+  // Have to convert single string hostname to IP
+  const coordinatorIp = await dnsLookup(coordinatorHost)
 
+  const port = 8888
   const coordinatorConfig = {
     bootstrap: true,
     address: config.zkopruContract,
@@ -38,8 +49,8 @@ async function testCoodinator() {
     maxBid: 20000,
     vhosts: '*',
     priceMultiplier: 48,
-    publicUrls: `${coordinatorIp}:8888`, // This is default params, Will be using registered coordinator address on Contract.
-    port: 8888,
+    publicUrls: `${coordinatorIp}:${port}`, // This is default params, Will be using registered coordinator address on Contract.
+    port,
   }
 
   const coordinator = new Coordinator(
@@ -51,7 +62,6 @@ async function testCoodinator() {
   // Override Block Generator for Observing
   coordinator.middlewares.proposer = new TestBlockProposer(coordinator.context)
 
-  logger.info(`Starting coordinaotpor`)
   coordinator.start()
 }
 

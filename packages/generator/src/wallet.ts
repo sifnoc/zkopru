@@ -11,9 +11,12 @@ import { config } from './config'
 
 startLogger(`./WALLET_LOG`)
 
+const redisIp = process.env.REDIS_IP ?? `redis`
+const organizerUrl = process.env.ORGANIZER_URL ?? 'http://organizer:8080'
+
 async function runGenerator() {
   logger.info('Wallet Initializing - get ID from organizer')
-  const registerResponse = await fetch(`http://organizer:8080/register`, {
+  const registerResponse = await fetch(`${organizerUrl}/register`, {
     method: 'post',
     body: JSON.stringify({
       role: 'wallet',
@@ -28,7 +31,7 @@ async function runGenerator() {
   logger.info(`Standby for deposit are ready`)
   while (!ready) {
     try {
-      const readyResponse = await fetch(`http://organizer:8080/canDeposit`, {
+      const readyResponse = await fetch(`${organizerUrl}/canDeposit`, {
         method: 'post',
         body: JSON.stringify({
           ID: registered.ID,
@@ -46,35 +49,33 @@ async function runGenerator() {
     config.mnemonic,
     'helloworld',
   )
+  const walletAccount = await hdWallet.createAccount(+registered.ID + 3)
 
   const walletNode: FullNode = await FullNode.new({
     provider: webSocketProvider,
     address: config.zkopruContract, // Zkopru contract
     db: mockupDB,
-    accounts: [],
+    accounts: [walletAccount],
   })
-
-  // Wait sync with coordinator, for checking coordinator works
-  walletNode.start()
-  while (!walletNode.synchronizer.isSynced()) {
-    await sleep(5000)
-  }
 
   // Assume that account index 0, 1, 2 are reserved
   // Account #0 - Coordinator
   // Account #1 - Slasher
   // Account #2 - None
-  const walletAccount = await hdWallet.createAccount(+registered.ID + 3)
   const transferGeneratorConfig = {
     hdWallet,
-    db: mockupDB,
     account: walletAccount,
+    accounts: [walletAccount],
     node: walletNode,
     noteAmount: { eth: toWei('0.1'), fee: toWei('0.01') },
     erc20: [],
     erc721: [],
     snarkKeyPath: path.join(__dirname, '../../circuits/keys'),
     ID: registered.ID,
+    redis: {
+      host: redisIp,
+      port: 6379,
+    },
   }
 
   const generator = new TransferGenerator(transferGeneratorConfig)
