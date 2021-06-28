@@ -235,7 +235,6 @@ export class TransferGenerator extends ZkWalletAccount {
         logger.info(`Created ZkTx : ${logAll(parsedZkTx)}`)
         try {
           const zkTx = await this.shieldTx({ tx })
-          // fs.writeFileSync(`/proj/packages/generator/zktx/${this.ID}/${tx.inflow[0].salt.toString(10)}.json`, JSON.stringify({ rawTx: tx, rawZkTx: zkTx }))
           this.usedUtxoSalt.add(sendableUtxo.salt.toNumber())
           this.queues.mainQueue.add(`wallet${this.ID}`, { tx, zkTx })
         } catch (err) {
