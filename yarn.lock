@@ -3925,17 +3925,10 @@
 "@zkopru/account@file:packages/account":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-03661457-406f-4c20-be8a-86617775bdb1-1622126427251/node_modules/@zkopru/babyjubjub"
     "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-03661457-406f-4c20-be8a-86617775bdb1-1622126427251/node_modules/@zkopru/database"
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-03661457-406f-4c20-be8a-86617775bdb1-1622126427251/node_modules/@zkopru/transaction"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-03661457-406f-4c20-be8a-86617775bdb1-1622126427251/node_modules/@zkopru/utils"
-=======
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f1e12e0e-8014-49e1-a4dd-92ff89a5a229-1621597660093/node_modules/@zkopru/babyjubjub"
-    "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f1e12e0e-8014-49e1-a4dd-92ff89a5a229-1621597660093/node_modules/@zkopru/database"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f1e12e0e-8014-49e1-a4dd-92ff89a5a229-1621597660093/node_modules/@zkopru/transaction"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-account-1.0.0-beta.2-f1e12e0e-8014-49e1-a4dd-92ff89a5a229-1621597660093/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     bip39 "^3.0.2"
     circomlib "0.5.1"
     hdkey "^1.1.1"
@@ -3948,11 +3941,7 @@
 "@zkopru/babyjubjub@file:packages/babyjubjub":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-babyjubjub-1.0.0-beta.2-48e275fb-18d4-4981-9d4a-3658f9acc220-1622126427248/node_modules/@zkopru/utils"
-=======
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-babyjubjub-1.0.0-beta.2-11c6ce45-38e9-40ae-933a-60ec93504d6d-1621597660090/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     big-integer "^1.6.48"
     blake-hash "^1.1.0"
     bn.js "^5.2.0"
@@ -3964,7 +3953,6 @@
 "@zkopru/cli@file:packages/cli":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/account"
     "@zkopru/coordinator" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/coordinator"
     "@zkopru/core" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/core"
@@ -3972,15 +3960,6 @@
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/transaction"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/utils"
     "@zkopru/zk-wizard" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-8ff405f1-309d-4d78-93cb-50632e4292a0-1622126427261/node_modules/@zkopru/zk-wizard"
-=======
-    "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/account"
-    "@zkopru/coordinator" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/coordinator"
-    "@zkopru/core" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/core"
-    "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/database"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/transaction"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/utils"
-    "@zkopru/zk-wizard" "file:../../.cache/yarn/v6/npm-@zkopru-cli-1.0.0-beta.2-c07a6cb6-d728-4342-93ea-2baca4b9935b-1621597660109/node_modules/@zkopru/zk-wizard"
->>>>>>> refactor: create generator class for eth transfer on layer2
     axios "^0.21.1"
     big-integer "^1.6.48"
     bip39 "^3.0.2"
@@ -4040,7 +4019,6 @@
 "@zkopru/coordinator@file:packages/coordinator":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/babyjubjub"
     "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/contracts"
     "@zkopru/core" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/core"
@@ -4048,15 +4026,6 @@
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/transaction"
     "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/tree"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-aa01ebcf-be73-456d-aa9c-0309757715bb-1622126427253/node_modules/@zkopru/utils"
-=======
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/core"
-    "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/database"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-coordinator-1.0.0-beta.2-af53e465-c4b7-471b-b874-3b493288fefe-1621597660094/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     async-lock "^1.2.2"
     axios "^0.21.1"
     big-integer "^1.6.48"
@@ -4084,21 +4053,12 @@
 "@zkopru/core@file:packages/core":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/account"
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/babyjubjub"
     "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/contracts"
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/transaction"
     "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/tree"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-e761f011-ac7d-4781-a1ee-b960575ccd9d-1622126427256/node_modules/@zkopru/utils"
-=======
-    "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/contracts"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-core-1.0.0-beta.2-20c17c6d-d11d-4048-a6e5-fc478bddcd7a-1621597660096/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.2.0"
@@ -4116,13 +4076,8 @@
 "@zkopru/database@file:packages/database":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-database-1.0.0-beta.2-8c7d6fd3-555f-4794-a1bb-31e426d48274-1622126427260/node_modules/@zkopru/babyjubjub"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-database-1.0.0-beta.2-8c7d6fd3-555f-4794-a1bb-31e426d48274-1622126427260/node_modules/@zkopru/utils"
-=======
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-database-1.0.0-beta.2-adeff199-11f9-43db-97b7-b0a663116626-1621597660107/node_modules/@zkopru/babyjubjub"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-database-1.0.0-beta.2-adeff199-11f9-43db-97b7-b0a663116626-1621597660107/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     async-lock "^1.2.8"
     bn.js "^5.2.0"
     fake-indexeddb "^3.1.2"
@@ -4137,13 +4092,8 @@
 "@zkopru/transaction@file:packages/transaction":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-55b504ce-84e8-4552-b665-9691bddd0ac1-1622126427249/node_modules/@zkopru/babyjubjub"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-55b504ce-84e8-4552-b665-9691bddd0ac1-1622126427249/node_modules/@zkopru/utils"
-=======
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-d5d76319-ce95-41a3-bac3-21e86bba3909-1621597660089/node_modules/@zkopru/babyjubjub"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-transaction-1.0.0-beta.2-d5d76319-ce95-41a3-bac3-21e86bba3909-1621597660089/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     big-integer "^1.6.48"
     bs58 "^4.0.1"
     chacha20 "^0.1.4"
@@ -4156,15 +4106,9 @@
 "@zkopru/tree@file:packages/tree":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-1866bda5-c4f1-493c-abbb-12d32f1723ed-1622126427257/node_modules/@zkopru/babyjubjub"
     "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-1866bda5-c4f1-493c-abbb-12d32f1723ed-1622126427257/node_modules/@zkopru/database"
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-1866bda5-c4f1-493c-abbb-12d32f1723ed-1622126427257/node_modules/@zkopru/transaction"
-=======
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-a64ab28e-60a4-4dd8-8c1e-d7f0f68725c0-1621597660100/node_modules/@zkopru/babyjubjub"
-    "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-a64ab28e-60a4-4dd8-8c1e-d7f0f68725c0-1621597660100/node_modules/@zkopru/database"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-tree-1.0.0-beta.2-a64ab28e-60a4-4dd8-8c1e-d7f0f68725c0-1621597660100/node_modules/@zkopru/transaction"
->>>>>>> refactor: create generator class for eth transfer on layer2
     async-lock "^1.2.2"
     big-integer "^1.6.48"
     bn.js "^5.2.0"
@@ -4199,7 +4143,6 @@
 "@zkopru/zk-wizard@file:packages/zk-wizard":
   version "1.0.0-beta.2"
   dependencies:
-<<<<<<< HEAD
     "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/account"
     "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/babyjubjub"
     "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/contracts"
@@ -4208,16 +4151,6 @@
     "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/transaction"
     "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/tree"
     "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-f838f9a2-f14a-43d6-868d-20330c53be22-1622126427254/node_modules/@zkopru/utils"
-=======
-    "@zkopru/account" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/account"
-    "@zkopru/babyjubjub" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/babyjubjub"
-    "@zkopru/contracts" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/contracts"
-    "@zkopru/core" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/core"
-    "@zkopru/database" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/database"
-    "@zkopru/transaction" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/transaction"
-    "@zkopru/tree" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/tree"
-    "@zkopru/utils" "file:../../.cache/yarn/v6/npm-@zkopru-zk-wizard-1.0.0-beta.2-22ffaff5-5dd9-48c1-807a-71eff2019847-1621597660098/node_modules/@zkopru/utils"
->>>>>>> refactor: create generator class for eth transfer on layer2
     big-integer "^1.6.48"
     circom_runtime "0.1.13"
     eth-sig-util "^3.0.1"

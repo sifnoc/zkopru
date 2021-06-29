@@ -25,11 +25,14 @@ const { TxBuilder, Utxo, ZkTx, ZkAddress } = require("~transaction");
 
 const outputPath = path.join(__dirname, "../test-cases");
 
+process.env.BLOCK_CONFIRMATIONS = "0";
+
 (async () => {
+  let context;
   try {
     if (process.env.DEBUG) attachConsoleLogToPino();
     console.log(`Generating test block, writing to "${outputPath}"`);
-    const context = await initContext();
+    context = await initContext();
     console.log("Registering vks");
     await registerVks(context);
     console.log("Finishing setup");
@@ -113,7 +116,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const ethRawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("1000000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendEther({
           eth: Fp.from(toWei("1", "ether")),
           to: context.accounts.coordinator.zkAddress
@@ -133,7 +136,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const erc20RawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("100000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendERC20({
           eth: Fp.zero,
           tokenAddr: context.tokens.erc20.address,
@@ -155,7 +158,7 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
       const erc20RawTx = TxBuilder.from(context.accounts.wallet.zkAddress)
         .provide(...walletSpendables.map(note => Utxo.from(note)))
-        .weiPerByte(toWei("100000", "gwei"))
+        .weiPerByte(toWei("10000", "gwei"))
         .sendERC20({
           eth: Fp.zero,
           tokenAddr: context.tokens.erc20.address,
@@ -163,7 +166,7 @@ const outputPath = path.join(__dirname, "../test-cases");
           to: ZkAddress.null,
           withdrawal: {
             to: Fp.from(context.accounts.wallet.ethAddress),
-            fee: Fp.from(toWei("100000", "gwei"))
+            fee: Fp.from(toWei("10000", "gwei"))
           }
         })
         .build();
@@ -241,12 +244,18 @@ const outputPath = path.join(__dirname, "../test-cases");
       );
     }
     console.log("File(s) written, exiting");
-    await terminate(context);
+    await Promise.race([
+      terminate(context),
+      new Promise(r => setTimeout(r, 30000))
+    ]);
     process.exit(0);
   } catch (err) {
     console.log(err);
     console.log("Uncaught error generating block");
-    await terminate(context).catch(() => {});
+    await Promise.race([
+      terminate(context).catch(() => {}),
+      new Promise(r => setTimeout(r, 30000))
+    ]);
     process.exit(1);
   }
 })();
