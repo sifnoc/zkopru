@@ -11,5 +11,5 @@
 - Run with kubenetes object
 
     ```shell
-    kubectl apply -f dockerfiles/localtest-geth.yaml
+    kubectl apply -f dockerfiles/kube.localtest-geth.yaml
     ```

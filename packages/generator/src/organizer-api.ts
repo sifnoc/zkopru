@@ -153,7 +153,7 @@ export class OrganizerApi {
     const { web3 } = this.context
     const { gasTable } = this.organizerData.layer1 // Initialized by constructor
 
-    web3.eth.subscribe('newBlockHeaders').on('data', async function (data) {
+    web3.eth.subscribe('newBlockHeaders').on('data', async function(data) {
       const blockData = await web3.eth.getBlock(data.hash)
       const txs: Promise<Transaction>[] = []
       const receipts: Promise<TransactionReceipt>[] = []
