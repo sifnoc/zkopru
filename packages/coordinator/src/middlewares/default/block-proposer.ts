@@ -23,7 +23,7 @@ export class BlockProposer extends ProposerBase {
       where: {
         OR: [
           {
-            hash: blockHashes, e
+            hash: blockHashes,
             verified: true,
             isUncle: null,
           },
