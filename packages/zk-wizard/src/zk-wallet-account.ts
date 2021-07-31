@@ -673,16 +673,10 @@ export class ZkWalletAccount {
     })
   }
 
-<<<<<<< HEAD
   async sendLayer2Tx(zkTx: ZkTx | ZkTx[]): Promise<Response> {
     const txs = [zkTx].flat()
     const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
     const response = await fetch(`${coordinatorUrl}/txs`, {
-=======
-  async sendLayer2Tx(zkTx: ZkTx): Promise<Response> {
-    const coordinatorUrl = await this.coordinatorManager.activeCoordinatorUrl()
-    const response = await fetch(`${coordinatorUrl}/tx`, {
->>>>>>> feat: create auto started coordinator and wallet for tx generator
       method: 'post',
       headers: {
         'content-type': 'application/json',
