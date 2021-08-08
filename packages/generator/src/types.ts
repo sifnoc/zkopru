@@ -20,6 +20,7 @@ interface CoordinatorUrls {
 }
 
 export interface OrganizerConfig extends OrganizerQueueConfig {
+  dev?: boolean
   organizerPort?: number
 }
 
@@ -28,22 +29,41 @@ export interface OrganizerContext {
   coordinators: CoordinatorUrls
 }
 
-export interface TxSummary {
+export interface RegisterData {
+  ID: number
+  from: string
+  role: 'wallet' | 'coordinator'
+  url: string
+}
+
+export interface TxData {
   [txHash: string]: {
     from: string
-    funcSig: string
-    inputSize: number
     gas: number
     gasUsed?: number
     success?: boolean
   }
 }
 
+export interface BidData {
+  bidder: string
+  bidAmount: number
+  txHash: string
+  blockNumber: number
+}
+
+export interface AuctionData {
+  [roundIndex: number]: {
+    highestBid: BidData
+    bidHistory: BidData[]
+  }
+}
+
 export interface ProposeData {
   timestamp: number
   proposeNum: number
-  blockHash: string
   parentsBlockHash: string
+  blockHash: string
   txcount: number
   from?: string
   layer1TxHash?: string
@@ -53,7 +73,8 @@ export interface ProposeData {
 
 export interface OrganizerData {
   layer1: {
-    txSummaries: TxSummary[]
+    txData: TxData[]
+    auctionData: AuctionData
     gasTable: { [sig: string]: GasData[] }
   }
   coordinatorData: ProposeData[]

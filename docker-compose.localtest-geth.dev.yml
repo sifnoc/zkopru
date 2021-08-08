@@ -23,6 +23,8 @@ services:
       - 'testnet'
     labels:
       kompose.service.expose: coordinator
+    volumes:
+      - './packages:/proj/packages'
     command: >
       bash -c "nc -l -p 5354 &&
       node /proj/packages/generator/dist/coordinator.js"
@@ -42,8 +44,10 @@ services:
     depends_on:
       - 'redis'
       - 'coordinator'
+    volumes:
+      - './packages:/proj/packages'
     labels:
-      kompose.service.expose: organizer
+      kompose.service.expose: organizer 
     command: bash -c "node /proj/packages/generator/dist/organizer.js"
   wallet:
     image: zkopru_node:latest
@@ -53,15 +57,27 @@ services:
     depends_on:
       - 'redis'
       - 'organizer'
+    volumes:
+      - './packages:/proj/packages'
     labels:
       kompose.controller.type: deployment
-    command: >
+    command: > 
       bash -c "sleep 10 && node /proj/packages/generator/dist/wallet.js"
   turner:
     image: zkopru_node:latest
     build:
       context: ./
       dockerfile: ./dockerfiles/Generator.dockerfile
+    volumes:
+      - './packages:/proj/packages'
     depends_on:
       - 'wallet'
     command: bash -c "sleep 60 && node /proj/packages/generator/dist/blockturner.js"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.33.0.0/24
+
