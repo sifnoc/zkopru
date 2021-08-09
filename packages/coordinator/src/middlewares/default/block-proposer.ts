@@ -1,8 +1,10 @@
 /* eslint-disable no-underscore-dangle */
 import { Block, MAX_MASS_DEPOSIT_COMMIT_GAS } from '@zkopru/core'
+import { Fp } from '@zkopru/babyjubjub'
 import { TransactionReceipt } from 'web3-core'
 import { soliditySha3Raw } from 'web3-utils'
 import { logger } from '@zkopru/utils'
+import { OutflowType } from '@zkopru/transaction'
 import { ProposerBase } from '../interfaces/proposer-base'
 
 export class BlockProposer extends ProposerBase {
@@ -37,7 +39,6 @@ export class BlockProposer extends ProposerBase {
       logger.info(`Already proposed for the given parent block`)
       return undefined
     }
-
     const parentProposal = await layer2.db.findOne('Proposal', {
       where: {
         hash: block.header.parentBlock.toString(),
@@ -50,6 +51,21 @@ export class BlockProposer extends ProposerBase {
       throw new Error('No proposal data for parent block')
     }
     const bytes = block.serializeBlock()
+    logger.trace(
+      `BlockProposer >> block utxo root : ${block.header.utxoRoot.toString()}`,
+    )
+    logger.trace(
+      `BlockProposer >> block utxo index : ${block.header.utxoIndex.toString()}`,
+    )
+    const newUtxos: Fp[] = block.body.txs.reduce((arr, tx) => {
+      return [
+        ...arr,
+        ...tx.outflow
+          .filter(outflow => outflow.outflowType.eqn(OutflowType.UTXO))
+          .map(outflow => outflow.note),
+      ]
+    }, [] as Fp[])
+    logger.trace(`BlockProposer >> block body newUtxos : ${newUtxos}`)
     const blockData = `0x${bytes.toString('hex')}`
     let proposeTx: any
     if (parentProposal.proposalNum === 0) {

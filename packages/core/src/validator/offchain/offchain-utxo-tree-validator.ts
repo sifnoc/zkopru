@@ -5,6 +5,7 @@ import { Bytes32, Uint256 } from 'soltypes'
 import { soliditySha3Raw } from 'web3-utils'
 import { OutflowType, ZkOutflow } from '@zkopru/transaction'
 import BN from 'bn.js'
+import { logger } from '@zkopru/utils'
 import { L2Chain } from '../../context/layer2'
 import { Block, headerHash } from '../../block'
 import { BlockData, HeaderData, Validation, UtxoTreeValidator } from '../types'
@@ -118,6 +119,9 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       },
       deposits.map(deposit => Fp.from(deposit.toString())),
     )
+    const blockHeaderHash = block.header.utxoRoot.toHexString()
+    logger.info(`offchainValidator >> blockHeaderHash : ${blockHeaderHash}`)
+    logger.info(`offchaingValidator >> newUTXOs ${newUtxos}`)
     const computedRoot = SubTreeLib.appendAsSubTrees(
       this.hasher,
       Fp.from(parentHeader.utxoRoot.toString()),
@@ -126,8 +130,12 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       newUtxos,
       subTreeSiblings.map(sib => Fp.from(sib.toString())),
     )
+    const compRoot = computedRoot.toNumber()
+    const utxoRoot = block.header.utxoRoot.toBN()
+    logger.info(`offchaingValidator >> computeRoote : ${compRoot}`)
+    logger.info(`offchaingValidator >> utxoRoot : ${utxoRoot.toNumber()}`)
     return {
-      slashable: !computedRoot.eq(block.header.utxoRoot.toBN()),
+      slashable: !computedRoot.eq(utxoRoot),
       reason: CODE.U3,
     }
   }

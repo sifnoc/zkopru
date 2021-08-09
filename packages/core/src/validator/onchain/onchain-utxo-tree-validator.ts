@@ -1,11 +1,16 @@
 import { Uint256 } from 'soltypes'
+import { logger } from '@zkopru/utils'
 import {
   BlockData,
   HeaderData,
   OnchainValidation,
   UtxoTreeValidator,
 } from '../types'
-import { blockDataToHexString, headerDataToHexString } from '../utils'
+import {
+  blockDataToHexString,
+  headerDataToHexString,
+  blockDataToBlock,
+} from '../utils'
 import { OnchainValidatorContext } from './onchain-context'
 
 export class OnchainUtxoTreeValidator extends OnchainValidatorContext
@@ -36,6 +41,9 @@ export class OnchainUtxoTreeValidator extends OnchainValidatorContext
       deposits.map(d => d.toString()),
       subtreeSiblings.map(d => d.toString()),
     )
+    const blockdata = blockDataToBlock(block)
+    const blockHeaderHash = blockdata.header.utxoRoot.toHexString()
+    logger.info(`onchainValidator >> blockHeaderHash : ${blockHeaderHash}`)
     const result = await this.isSlashable(tx)
     return result
   }
