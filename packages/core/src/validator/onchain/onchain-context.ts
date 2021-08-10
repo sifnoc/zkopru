@@ -45,6 +45,12 @@ export class OnchainValidatorContext {
       logger.debug('slash call reverted', err)
       slashable = false
     }
+
+    if (slashable) {
+      logger.trace(
+        `isSlashable tx info >> slashed!! data object : ${tx.toString()}`,
+      )
+    }
     return {
       tx,
       slashable,

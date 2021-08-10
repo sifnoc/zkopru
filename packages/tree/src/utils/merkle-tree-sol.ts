@@ -1,9 +1,17 @@
+import util from 'util'
 import { Fp } from '@zkopru/babyjubjub'
 import assert from 'assert'
 import BN from 'bn.js'
+import { logger } from '@zkopru/utils'
 import { Hasher } from '../hasher'
 
 // This TS code corresponds to the MerkleTree.sol code file
+function logAll(Object) {
+  return util.inspect(Object, {
+    showHidden: true,
+    depth: null,
+  })
+}
 
 function appendLeaf<T extends Fp | BN>(
   hasher: Hasher<T>,
@@ -303,6 +311,20 @@ export function appendAsSubTrees<T extends Fp | BN>(
   let nextIndex = index
   let nextSiblings = [...subTreeSiblings]
   const subTrees = splitToSubTrees(hasher, leaves, subTreeDepth)
+
+  for (let i = 0; i < subTrees.length; i += 1) {
+    const parsedSubTrees = subTrees[i].map(leaf => {
+      const shortHex = leaf.toString()
+      const left = shortHex.slice(0, 6) ?? '000000'
+      const right = shortHex.slice(-5) ?? '000000'
+      return `${left}...${right}`
+    })
+    logger.info(
+      `splitted subtree >> SubTrees ${i + 1} leafs ${
+        parsedSubTrees.length
+      } >> \n ${logAll(parsedSubTrees)}`,
+    )
+  }
   for (let i = 0; i < subTrees.length; i += 1) {
     const updated = appendSubTree(
       hasher,

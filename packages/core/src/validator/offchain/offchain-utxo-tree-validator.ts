@@ -119,9 +119,19 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       },
       deposits.map(deposit => Fp.from(deposit.toString())),
     )
-    const blockHeaderHash = block.header.utxoRoot.toHexString()
-    logger.info(`offchainValidator >> blockHeaderHash : ${blockHeaderHash}`)
-    logger.info(`offchaingValidator >> newUTXOs ${newUtxos}`)
+    // const blockHeaderHash = block.header.utxoRoot.toHexString()
+    // const parentHeaderutxoRoot = parentHeader.utxoRoot.toString()
+    logger.info(`offchainValidator >> proposed block hash : ${block.hash}`)
+    logger.info(
+      `offchainValidator >> proposed tx root : ${block.header.txRoot}`,
+    )
+    logger.info(
+      `offchainValidator >> proposed utxo index : ${block.header.utxoIndex}`,
+    )
+    logger.info(
+      `offchainValidator >> proposed utxo Root : ${block.header.utxoRoot}`,
+    )
+    logger.info(`offchainValidator >> newUTXOs ${newUtxos}`)
     const computedRoot = SubTreeLib.appendAsSubTrees(
       this.hasher,
       Fp.from(parentHeader.utxoRoot.toString()),
@@ -130,10 +140,12 @@ export class OffchainUtxoTreeValidator extends OffchainValidatorContext
       newUtxos,
       subTreeSiblings.map(sib => Fp.from(sib.toString())),
     )
-    const compRoot = computedRoot.toNumber()
+    const compRoot = computedRoot.toString()
     const utxoRoot = block.header.utxoRoot.toBN()
-    logger.info(`offchaingValidator >> computeRoote : ${compRoot}`)
-    logger.info(`offchaingValidator >> utxoRoot : ${utxoRoot.toNumber()}`)
+    logger.info(
+      `offchainVUtxo validator >> SubLib.appendAsSubTrees : ${compRoot}`,
+    )
+    logger.info(`offchainVUtxo validator >> utxoRoot : ${utxoRoot.toString()}`)
     return {
       slashable: !computedRoot.eq(utxoRoot),
       reason: CODE.U3,

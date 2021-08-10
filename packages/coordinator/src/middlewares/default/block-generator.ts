@@ -37,6 +37,9 @@ export class BlockGenerator extends GeneratorBase {
       this.context.config.maxBytes - consumedBytes,
       this.context.gasPrice.muln(this.context.config.priceMultiplier),
     )
+    logger.info(
+      `>> 2. pick transaction  pendingTxs length : ${pendingTxs.length}`,
+    )
     const txs = [] as ZkTx[]
     // check each pending tx to make sure it doesn't break the dry patch
     for (const tx of pendingTxs) {

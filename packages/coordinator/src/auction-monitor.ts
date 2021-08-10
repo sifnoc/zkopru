@@ -50,7 +50,7 @@ export class AuctionMonitor {
 
   nodeUrl = ''
 
-  maxBidRounds = 15
+  maxBidRounds = 80
 
   // How close the round in question needs to be for us to bid
   roundBidThreshold = 3

@@ -73,6 +73,7 @@ export class TxMemPool implements TxPoolInterface {
     const txs = await this.db.findMany('PendingTx', {
       where: {},
     })
+    logger.info(`>> loadPendingTx length: ${txs.length}`)
     // Look for pending transactions that have since been included in a block
     const hashesToDrop = await this.verifiedTx(txs.map(({ hash }) => hash))
     if (hashesToDrop.length > 0) {
@@ -166,6 +167,7 @@ export class TxMemPool implements TxPoolInterface {
     // TODO add atomic swap tx logic here
     let available = maxBytes
     const sorted = this.getSortedTxs()
+    logger.debug(`>> pickTxs sorted Tx length : ${sorted.length}`)
     const pending: (ZkTx[] | ZkTx)[] = []
     // Add pairing transactions first
     const swapTxs: { [txHash: string]: ZkTx } = {}
@@ -212,8 +214,9 @@ export class TxMemPool implements TxPoolInterface {
         // Normal transactions
         const size = tx.size()
         const expectedFee = minPricePerByte.muln(size)
-        logger.info(`expected fee: ${expectedFee.toString()}`)
-        logger.info(`tx.fee: ${tx.fee.toString()}`)
+        // logger.info(`expected fee: ${expectedFee.toString()}`)
+        // logger.info(`tx.fee: ${tx.fee.toString()}`)
+        logger.debug(`picked Tx count ${picked.length}`)
         if (available >= size && tx.fee.gte(expectedFee)) {
           available -= size
           fee = fee.add(tx.fee)

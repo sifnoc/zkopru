@@ -97,10 +97,7 @@ export class OrganizerQueue {
 
       subScheduler[queueName] = new QueueScheduler(queueName, { connection })
     }
-
-    const defaultRate = this.config.rates[0]
-
-    this.currentQueue = defaultRate.name ?? defaultRate.max.toString()
+    this.currentQueue = this.config.rates[0].name as string
 
     this.queues = {
       main: new Queue('mainQueue', { connection }),

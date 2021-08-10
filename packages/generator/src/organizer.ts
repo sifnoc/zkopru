@@ -33,7 +33,7 @@ const organizerConfig: OrganizerConfig = {
   connection: { host: isDevelopment ? 'localhost' : 'redis', port: 6379 },
   dev: !!isDevelopment,
   rates: [
-    { name: '0.1', max: 1, duration: 10000 },
+    // { name: '0.1', max: 1, duration: 10000 },
     { name: '1', max: 1, duration: 1000 },
     { name: '10', max: 10, duration: 1000 },
     { name: '20', max: 20, duration: 1000 },
