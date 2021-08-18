@@ -181,9 +181,8 @@ library SubTreeLib {
         returns (uint256[][] memory subTrees)
     {
         uint256 subTreeSize = 1 << subTreeDepth;
-        uint256 numOfSubTrees =
-            (leaves.length / subTreeSize) +
-                (leaves.length % subTreeSize == 0 ? 0 : 1);
+        uint256 numOfSubTrees = (leaves.length / subTreeSize) +
+            (leaves.length % subTreeSize == 0 ? 0 : 1);
         subTrees = new uint256[][](numOfSubTrees);
         for (uint256 i = 0; i < numOfSubTrees; i++) {
             subTrees[i] = new uint256[](subTreeSize);
@@ -301,7 +300,7 @@ library SubTreeLib {
         require(leaves.length <= treeSize, "Overflowed");
 
         uint256[] memory nodes = new uint256[](treeSize << 1); // we'll not use nodes[0]
-        uint256 emptyNode = treeSize + leaves.length; // we do not hash if we can use pre hashed zeroes
+        uint256 lastNotEmptyNode = treeSize + leaves.length - 1;
 
         // From the bottom to the top
         for (uint256 level = 0; level <= subTreeDepth; level++) {
@@ -312,7 +311,7 @@ library SubTreeLib {
                 nodeIndex >= leftMostOfTheFloor;
                 nodeIndex--
             ) {
-                if (nodeIndex < emptyNode) {
+                if (nodeIndex <= lastNotEmptyNode) {
                     // This node is not an empty node
                     if (level == 0) {
                         // Leaf node
@@ -331,7 +330,7 @@ library SubTreeLib {
                     nodes[nodeIndex] = self.preHashedZero[level];
                 }
             }
-            emptyNode >>= 1;
+            lastNotEmptyNode >>= 1;
         }
         return nodes[1];
     }
