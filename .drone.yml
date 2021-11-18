@@ -10,3 +10,9 @@ steps:
       from_secret: drone_token
     repositories:
       - sifnoc/stress-test@feat/drone-ci
+
+trigger:
+  repo:
+    - sifnoc/zkopru
+  branch:
+    - main
