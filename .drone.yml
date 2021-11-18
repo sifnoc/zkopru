@@ -1,0 +1,12 @@
+kind: pipeline
+name: default
+
+steps:
+- name: trigger  
+  image: plugins/downstream
+  settings:
+    server: https://zkopru.sifnoc.net
+    token:
+      from_secret: dron_token
+    repositories:
+      - sifnoc/stress-test@develop
