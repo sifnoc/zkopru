@@ -4,6 +4,7 @@ name: default
 steps:
 - name: trigger  
   image: plugins/downstream
+  fork: true
   settings:
     server: https://zkopru.sifnoc.net
     token:
