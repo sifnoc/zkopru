@@ -101,7 +101,7 @@ export class CoordinatorManager {
     const urls = url.split(',')
     if (urls.length === 0) return
     for (const u of urls) {
-      logger.info(u)
+      logger.info(`core/coordinator-manager -coordinatorUrl : ${u}`)
       // ping to see if it's active
       try {
         const fullUrl = `https://${u}`
@@ -131,7 +131,7 @@ export class CoordinatorManager {
       .UrlUpdate()
       .on('connected', (subId: string) => {
         logger.info(
-          `coordinator manager: UrlUpdate listener connected. ID: ${subId}`,
+          `core/coordinator-manager: UrlUpdate listener connected. ID: ${subId}`,
         )
       })
       .on('data', async (data: any) => {

@@ -342,6 +342,12 @@ export class Coordinator extends EventEmitter {
       )
       return
     }
+    if (url === auctionMonitor.nodeUrl) {
+      logger.info(
+        `coordinator/coordinator.ts - No need to forward transactions by itself`,
+      )
+      return
+    }
     for (const tx of pendingTx) {
       // forward
       await fetch(`${url}/tx`, {
