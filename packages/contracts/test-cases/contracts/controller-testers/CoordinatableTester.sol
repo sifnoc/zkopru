@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
 
-import {
-    Coordinatable
-} from "../../../contracts/zkopru/controllers/Coordinatable.sol";
+import { Coordinatable } from "../target/zkopru/controllers/Coordinatable.sol";
 
-import {
-    IConsensusProvider
-} from "../../../contracts/consensus/interfaces/IConsensusProvider.sol";
-import {
-    Proposer,
-    Proposal
-} from "../../../contracts/zkopru/libraries/Types.sol";
+import { IConsensusProvider } from "../target/consensus/interfaces/IConsensusProvider.sol";
+import { Proposer, Proposal } from "../target/zkopru/libraries/Types.sol";
 
 contract MockConsensusProvider is IConsensusProvider {
     function openRoundIfNeeded() external override {}
