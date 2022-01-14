@@ -2,7 +2,9 @@
 pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
-import { UserInteractable } from "../target/zkopru/controllers/UserInteractable.sol";
+import {
+    UserInteractable
+} from "../../target/zkopru/controllers/UserInteractable.sol";
 
 contract UserInteractableTester is UserInteractable {
     constructor() {}

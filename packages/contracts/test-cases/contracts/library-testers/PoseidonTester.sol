@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
 
-import { Hash, Poseidon2, Poseidon3, Poseidon4 } from "../target/zkopru/libraries/Hash.sol";
+import {
+    Hash,
+    Poseidon2,
+    Poseidon3,
+    Poseidon4
+} from "../../target/zkopru/libraries/Hash.sol";
 
 contract PoseidonTester {
     function preHashed() public pure returns (uint256[] memory) {

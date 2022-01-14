@@ -2,9 +2,17 @@
 pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
-import { Proof, Outflow, Block, Transaction, Types } from "../target/zkopru/libraries/Types.sol";
-import { Deserializer } from "../target/zkopru/libraries/Deserializer.sol";
-import { UtxoTreeValidator } from "../target/zkopru/controllers/validators/UtxoTreeValidator.sol";
+import {
+    Proof,
+    Outflow,
+    Block,
+    Transaction,
+    Types
+} from "../../target/zkopru/libraries/Types.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
+import {
+    UtxoTreeValidator
+} from "../../target/zkopru/controllers/validators/UtxoTreeValidator.sol";
 
 contract UtxoTreeValidatorTester is UtxoTreeValidator {
     using Types for Outflow;

@@ -1,8 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity =0.7.4;
 
-import { Deserializer } from "../target/zkopru/libraries/Deserializer.sol";
-import { Finalization, Block, Inflow, Outflow, PublicData, Proof, Transaction, MassDeposit, MassMigration, Types } from "../target/zkopru/libraries/Types.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
+import {
+    Finalization,
+    Block,
+    Inflow,
+    Outflow,
+    PublicData,
+    Proof,
+    Transaction,
+    MassDeposit,
+    MassMigration,
+    Types
+} from "../../target/zkopru/libraries/Types.sol";
 
 contract DeserializationTester {
     using Types for MassDeposit[];
@@ -275,8 +286,8 @@ contract DeserializationTester {
         pure
         returns (address)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.header.proposer;
     }
 
@@ -285,8 +296,8 @@ contract DeserializationTester {
         uint256,
         bytes calldata
     ) external pure returns (address) {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(2);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(2);
         return _finalization.header.proposer;
     }
 
@@ -295,8 +306,8 @@ contract DeserializationTester {
         pure
         returns (bytes32)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.header.parentBlock;
     }
 
@@ -306,8 +317,8 @@ contract DeserializationTester {
         uint256,
         bytes calldata
     ) external pure returns (bytes32) {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(3);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(3);
         return _finalization.header.parentBlock;
     }
 
@@ -316,8 +327,8 @@ contract DeserializationTester {
         pure
         returns (uint256 root, uint256 index)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         root = _finalization.header.utxoRoot;
         index = _finalization.header.utxoIndex;
     }
@@ -327,8 +338,8 @@ contract DeserializationTester {
         pure
         returns (bytes32 root)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         root = _finalization.header.nullifierRoot;
     }
 
@@ -337,8 +348,8 @@ contract DeserializationTester {
         pure
         returns (uint256 root, uint256 index)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         root = _finalization.header.withdrawalRoot;
         index = _finalization.header.withdrawalIndex;
     }
@@ -348,8 +359,8 @@ contract DeserializationTester {
         pure
         returns (bytes32)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.header.txRoot;
     }
 
@@ -358,8 +369,8 @@ contract DeserializationTester {
         pure
         returns (bytes32)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.header.depositRoot;
     }
 
@@ -368,8 +379,8 @@ contract DeserializationTester {
         pure
         returns (bytes32)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.header.migrationRoot;
     }
 
@@ -378,8 +389,8 @@ contract DeserializationTester {
         pure
         returns (uint256 len)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.massDeposits.length;
     }
 
@@ -388,8 +399,8 @@ contract DeserializationTester {
         pure
         returns (bytes32 merged, uint256 fee)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(1);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(1);
         merged = _finalization.massDeposits[index].merged;
         fee = _finalization.massDeposits[index].fee;
     }
@@ -399,8 +410,8 @@ contract DeserializationTester {
         pure
         returns (bytes32)
     {
-        Finalization memory _finalization = Deserializer
-            .finalizationFromCalldataAt(0);
+        Finalization memory _finalization =
+            Deserializer.finalizationFromCalldataAt(0);
         return _finalization.massDeposits.root();
     }
 }

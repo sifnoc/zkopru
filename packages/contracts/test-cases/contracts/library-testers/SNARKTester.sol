@@ -2,10 +2,14 @@
 pragma solidity =0.7.4;
 pragma experimental ABIEncoderV2;
 
-import { SNARK } from "../target/zkopru/libraries/SNARK.sol";
-import { Proof, Block, Transaction } from "../target/zkopru/libraries/Types.sol";
-import { G1Point, G2Point } from "../target/zkopru/libraries/Pairing.sol";
-import { Deserializer } from "../target/zkopru/libraries/Deserializer.sol";
+import { SNARK } from "../../target/zkopru/libraries/SNARK.sol";
+import {
+    Proof,
+    Block,
+    Transaction
+} from "../../target/zkopru/libraries/Types.sol";
+import { G1Point, G2Point } from "../../target/zkopru/libraries/Pairing.sol";
+import { Deserializer } from "../../target/zkopru/libraries/Deserializer.sol";
 
 contract SNARKTester {
     using SNARK for SNARK.VerifyingKey;
