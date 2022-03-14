@@ -283,7 +283,7 @@ export class L2Chain {
     })
     // 3. validation
     const validCommits = [] as MassDepositSql[]
-    const validDeposits = [] as DepositSql[]
+    const validLeaves = [] as Fp[]
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
@@ -301,14 +301,14 @@ export class L2Chain {
         break
       }
       validCommits.push(commit)
-      validDeposits.push(...deposits)
+      validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
     }
     return {
       massDeposits: validCommits.map(commit => ({
         merged: Bytes32.from(commit.merged),
         fee: Uint256.from(commit.fee),
       })),
-      leaves: validDeposits.map(deposit => Fp.from(deposit.note)),
+      leaves: validLeaves,
       totalFee: validCommits.reduce((acc, commit) => {
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
