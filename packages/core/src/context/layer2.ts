@@ -288,9 +288,9 @@ export class L2Chain {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
-      // If found missing deposit or no deposit in commits,
-      // stop iteration
+      // If found missing deposit or no deposit in commits
       if (deposits.length === 0) {
+        logger.trace(`core/context-layer2.ts - no deposit`)
         break
       }
       const { merged, fee } = mergeDeposits(deposits)
@@ -298,6 +298,7 @@ export class L2Chain {
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
+        logger.trace(`core/context-layer2.ts - missing deposit in commits`)
         break
       }
       validCommits.push(commit)
