@@ -305,13 +305,13 @@ export class L2Chain {
         logger.trace(`commit.merged: ${commit.merged}`)
         logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
         logger.trace(`core/context-layer2.ts - missing deposit in commits`)
-        totalPendingDeposits += deposits.length
         continue
       }
-      logger.trace(`core/context-layer2.ts - total deposits are :${totalPendingDeposits}`)
+      totalPendingDeposits += deposits.length
       validCommits.push(commit)
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
     }
+    logger.trace(`core/context-layer2.ts - total deposits are :${totalPendingDeposits}`)
     return {
       massDeposits: validCommits.map(commit => ({
         merged: Bytes32.from(commit.merged),
