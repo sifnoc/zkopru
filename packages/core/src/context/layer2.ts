@@ -293,7 +293,7 @@ export class L2Chain {
       // If found missing deposit or no deposit in commits
       if (deposits.length === 0) {
         logger.trace(`core/context-layer2.ts - no deposit`)
-        break
+        continue
       }
       const { merged, fee } = mergeDeposits(deposits)
       if (
@@ -304,7 +304,7 @@ export class L2Chain {
         logger.trace(`commit.merged: ${commit.merged}`)
         logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
         logger.trace(`core/context-layer2.ts - missing deposit in commits`)
-        break
+        continue
       }
       validCommits.push(commit)
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
