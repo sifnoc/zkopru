@@ -288,6 +288,8 @@ export class L2Chain {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
+      logger.trace(`commit index: ${commit.index}`)
+      logger.trace(`deposit length ${deposits.length}`)
       // If found missing deposit or no deposit in commits
       if (deposits.length === 0) {
         logger.trace(`core/context-layer2.ts - no deposit`)
