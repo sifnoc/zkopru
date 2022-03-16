@@ -284,6 +284,7 @@ export class L2Chain {
     // 3. validation
     const validCommits = [] as MassDepositSql[]
     const validLeaves = [] as Fp[]
+    let totalPendingDeposits = 0
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
@@ -304,8 +305,10 @@ export class L2Chain {
         logger.trace(`commit.merged: ${commit.merged}`)
         logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
         logger.trace(`core/context-layer2.ts - missing deposit in commits`)
+        totalPendingDeposits += deposits.length
         continue
       }
+      logger.trace(`core/context-layer2.ts - total deposits are :${totalPendingDeposits}`)
       validCommits.push(commit)
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
     }
