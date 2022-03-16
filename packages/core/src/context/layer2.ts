@@ -298,6 +298,9 @@ export class L2Chain {
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
+        logger.trace(`merged.toString() : ${merged.toString()}`)
+        logger.trace(`commit.merged: ${commit.merged}`)
+        logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
         logger.trace(`core/context-layer2.ts - missing deposit in commits`)
         break
       }
