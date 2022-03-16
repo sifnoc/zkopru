@@ -22,6 +22,7 @@ import {
   MassMigration,
   MigrationAsset,
 } from './types'
+import { logger } from '@zkopru/utils'
 
 export function headerToSql(header: Header): HeaderSql {
   const sql: HeaderSql = {} as HeaderSql
@@ -139,11 +140,13 @@ export function serializeMassDeposits(massDeposits: MassDeposit[]): Buffer {
   const arr: Buffer[] = []
   // Mass deposits
   const massDepositLenBytes = Utils.numToBuffer(massDeposits.length, 1)
+  logger.trace(`utils/serializedMassDeposits: massDepositLenBytes: ${massDepositLenBytes.length}`)
   arr.push(massDepositLenBytes)
   for (let i = 0; i < massDeposits.length; i += 1) {
     arr.push(massDeposits[i].merged.toBuffer())
     arr.push(massDeposits[i].fee.toBuffer())
   }
+  logger.trace(`utils/serializedMassDeposits: arr length: ${arr.length}`)
   return Buffer.concat(arr)
 }
 
