@@ -156,6 +156,7 @@ export class Block {
         .toString()
         .slice(0, 6)}...)::serializeBlock()`,
     )
+    logger.trace(`core/block.ts - Block body length, txs: ${this.body.txs.length}, massDepsoit: ${this.body.massDeposits.length}`)
     const arr: Buffer[] = []
     // Header
     const headerBytes = serializeHeader(this.header)
