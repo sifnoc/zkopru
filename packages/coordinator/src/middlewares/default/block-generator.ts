@@ -29,9 +29,7 @@ export class BlockGenerator extends GeneratorBase {
     const { layer2 } = this.context.node
     // 1. pick mass deposits
     const pendingMassDeposits = await layer2.getPendingMassDeposits()
-    if (pendingMassDeposits.massDeposits.length) {
-      consumedBytes = 1 + (pendingMassDeposits.massDeposits.length * 64)
-    }
+    consumedBytes += pendingMassDeposits.calldataSize 
     aggregatedFee = aggregatedFee.add(pendingMassDeposits.totalFee)
 
     // 2. pick transactions

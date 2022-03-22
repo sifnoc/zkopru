@@ -295,12 +295,23 @@ export class L2Chain {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
+      logger.trace(`commit index: ${commit.index}`)
+      logger.trace(`deposit length ${deposits.length}`)
+      // If found missing deposit or no deposit in commits
+      if (deposits.length === 0) {
+        logger.trace(`core/context-layer2.ts - no deposit`)
+        continue
+      }
       const { merged, fee } = mergeDeposits(deposits)
       if (
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
         // eslint-disable-next-line no-continue
+        logger.trace(`merged.toString() : ${merged.toString()}`)
+        logger.trace(`commit.merged: ${commit.merged}`)
+        logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
+        logger.trace(`core/context-layer2.ts - missing deposit in commits`)
         continue
       }
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
@@ -318,7 +329,7 @@ export class L2Chain {
         if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
-      calldataSize: consumedBytes,
+      calldataSize: consumedBytes ? (consumedBytes * 64) + 1 : 0,
     }
   }
 
