@@ -34,6 +34,7 @@ export interface PendingMassDeposits {
   massDeposits: MassDeposit[]
   leaves: Fp[]
   totalFee: Fp
+  calldataSize: number
 }
 
 export class L2Chain {
@@ -259,15 +260,15 @@ export class L2Chain {
   }
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
+    const leaves: Fp[] = []
+    let consumedBytes = 0
+    let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
-      orderBy: { blockNumber: 'asc' },
-      limit: 255
     })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
-    // 2. pick deposits
-    const pendingDeposits: DepositSql[] = await this.db.findMany('Deposit', {
+    const pendingDeposits = await this.db.findMany('Deposit', {
       where: { queuedAt: commits.map(commit => commit.index) },
     })
     pendingDeposits.sort((a, b) => {
@@ -283,46 +284,41 @@ export class L2Chain {
       }
       return a.logIndex - b.logIndex
     })
-    // 3. validation
-    const validCommits = [] as MassDepositSql[]
+    leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
+    consumedBytes += commits.length
+    aggregatedFee = aggregatedFee.add(
+      pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
+    )
+    const includedIndexes = {}
     const validLeaves = [] as Fp[]
-    let totalPendingDeposits = 0
     for (const commit of commits) {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
-      logger.trace(`commit index: ${commit.index}`)
-      logger.trace(`deposit length ${deposits.length}`)
-      // If found missing deposit or no deposit in commits
-      if (deposits.length === 0) {
-        logger.trace(`core/context-layer2.ts - no deposit`)
-        continue
-      }
       const { merged, fee } = mergeDeposits(deposits)
       if (
         merged.toString() !== commit.merged ||
         !Fp.from(fee.toString()).eq(Fp.from(commit.fee))
       ) {
-        logger.trace(`merged.toString() : ${merged.toString()}`)
-        logger.trace(`commit.merged: ${commit.merged}`)
-        logger.trace(`fee: ${fee.toString()} and commit.fee ${Fp.from(commit.fee)}`)
-        logger.trace(`core/context-layer2.ts - missing deposit in commits`)
+        // eslint-disable-next-line no-continue
         continue
       }
-      totalPendingDeposits += deposits.length
-      validCommits.push(commit)
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
+      includedIndexes[commit.index] = true
     }
-    logger.trace(`core/context-layer2.ts - total deposits are :${totalPendingDeposits}`)
     return {
-      massDeposits: validCommits.map(commit => ({
-        merged: Bytes32.from(commit.merged),
-        fee: Uint256.from(commit.fee),
-      })),
+      massDeposits: commits
+        .filter(commit => includedIndexes[commit.index])
+        .map(commit => ({
+          merged: Bytes32.from(commit.merged),
+          fee: Uint256.from(commit.fee),
+        })),
       leaves: validLeaves,
-      totalFee: validCommits.reduce((acc, commit) => {
+      totalFee: commits.reduce((acc, commit) => {
+        if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
+      calldataSize: consumedBytes,
     }
   }
 
