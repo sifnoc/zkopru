@@ -261,11 +261,12 @@ export class L2Chain {
 
   async getPendingMassDeposits(): Promise<PendingMassDeposits> {
     const leaves: Fp[] = []
-    let consumedBytes = 0
     let aggregatedFee: Fp = Fp.zero
     // 1. pick mass deposits
     const commits: MassDepositSql[] = await this.db.findMany('MassDeposit', {
       where: { includedIn: null },
+      orderBy: { blockNumber: 'asc' },
+      limit: 255
     })
     commits.sort((a, b) => parseInt(a.index, 10) - parseInt(b.index, 10))
     const pendingDeposits = await this.db.findMany('Deposit', {
@@ -285,7 +286,6 @@ export class L2Chain {
       return a.logIndex - b.logIndex
     })
     leaves.push(...pendingDeposits.map(deposit => Fp.from(deposit.note)))
-    consumedBytes += commits.length
     aggregatedFee = aggregatedFee.add(
       pendingDeposits.reduce((prev, item) => prev.add(item.fee), Fp.zero),
     )
@@ -295,11 +295,10 @@ export class L2Chain {
       const deposits = pendingDeposits.filter(deposit => {
         return deposit.queuedAt === commit.index
       })
-      logger.trace(`commit index: ${commit.index}`)
-      logger.trace(`deposit length ${deposits.length}`)
       // If found missing deposit or no deposit in commits
       if (deposits.length === 0) {
         logger.trace(`core/context-layer2.ts - no deposit`)
+        // eslint-disable-next-line no-continue
         continue
       }
       const { merged, fee } = mergeDeposits(deposits)
@@ -317,29 +316,30 @@ export class L2Chain {
       validLeaves.push(...deposits.map(deposit => Fp.from(deposit.note)))
       includedIndexes[commit.index] = true
     }
+    const massDeposits = commits
+      .filter(commit => includedIndexes[commit.index])
+      .map(commit => ({
+        merged: Bytes32.from(commit.merged),
+        fee: Uint256.from(commit.fee),
+      }))
     return {
-      massDeposits: commits
-        .filter(commit => includedIndexes[commit.index])
-        .map(commit => ({
-          merged: Bytes32.from(commit.merged),
-          fee: Uint256.from(commit.fee),
-        })),
+      massDeposits,
       leaves: validLeaves,
       totalFee: commits.reduce((acc, commit) => {
         if (!includedIndexes[commit.index]) return acc
         return acc.add(Fp.from(commit.fee))
       }, Fp.zero),
-      calldataSize: consumedBytes ? (consumedBytes * 64) + 1 : 0,
+      calldataSize: massDeposits.length ? massDeposits.length * 64 + 1 : 0,
     }
   }
 
   async getOldestUnprocessedBlock(): Promise<
     | undefined
     | {
-        parent: Header
-        block: Block
-        proposal: Proposal
-      }
+      parent: Header
+      block: Block
+      proposal: Proposal
+    }
   > {
     const unprocessedProposals = await this.db.findMany('Proposal', {
       where: {
