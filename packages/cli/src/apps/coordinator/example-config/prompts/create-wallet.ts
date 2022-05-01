@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import Web3 from 'web3'
+import { Wallet as ethersWallet } from 'ethers'
 import crypto from 'crypto'
 import fs from 'fs'
 import { PromptApp, makePathAbsolute } from '@zkopru/utils'
@@ -21,8 +21,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
     if (!create) {
       return { context, next: Menu.SET_PUBLIC_URLS }
     }
-    const web3 = new Web3()
-    const account = web3.eth.accounts.create()
+    const wallet = ethersWallet.createRandom()
     const securePassword = crypto.randomBytes(32).toString('hex')
     const { password } = await this.ask({
       type: 'password',
@@ -30,7 +29,7 @@ export default class Wallet extends PromptApp<ExampleConfigContext, void> {
       message: `Enter a password to encrypt (press enter to use secure password):`,
       initial: securePassword,
     })
-    const keystore = account.encrypt(password)
+    const keystore = await wallet.encrypt(password)
     const { passwordFile } = await this.ask({
       type: 'text',
       name: 'passwordFile',
