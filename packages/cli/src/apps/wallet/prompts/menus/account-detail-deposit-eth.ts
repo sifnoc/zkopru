@@ -1,7 +1,7 @@
-import { fromWei, toWei } from 'web3-utils'
+import { BigNumberish, utils } from 'ethers'
 import assert from 'assert'
 import chalk from 'chalk'
-import { parseStringToUnit, logger } from '@zkopru/utils'
+import { logger } from '@zkopru/utils'
 import { BigNumber } from 'ethers'
 import App, { AppMenu, Context } from '..'
 
@@ -13,9 +13,8 @@ export default class DepositEther extends App {
     if (!context.account) throw Error('Account is not set')
     const { balance } = context
     assert(balance, 'Balance is defined')
-    // print(chalk.blue)(`Price per byte: ${fromWei(weiPerByte, 'gwei')} gwei`)
-    let amountWei: string
-    let feeWei: string
+    let amountWei: BigNumberish
+    let feeWei: BigNumberish
     let hasEnoughBalance = false
     do {
       const { amount } = await this.ask({
@@ -24,11 +23,10 @@ export default class DepositEther extends App {
         initial: 0,
         message: 'How much ETH do you want to deposit?',
       })
-      const parsedEth = parseStringToUnit(amount, 'ether')
-      amountWei = toWei(parsedEth.val, parsedEth.unit).toString()
+      amountWei = utils.parseEther(amount.toString())
       const messages: string[] = []
       messages.push(`Amount: ${amount} ETH`)
-      messages.push(`    = ${amountWei} wei`)
+      messages.push(`    = ${amountWei.toString()} wei`)
       this.print(messages.join('\n'))
       const { fee } = await this.ask({
         type: 'text',
@@ -36,12 +34,11 @@ export default class DepositEther extends App {
         initial: 0,
         message: 'How much ETH do you want to pay for the fee?',
       })
-      const parsedFee = parseStringToUnit(fee, 'ether')
-      feeWei = toWei(parsedFee.val, parsedFee.unit).toString()
+      feeWei = utils.parseEther(fee)
       messages.push(`Fee: ${fee} ETH`)
       messages.push(`    = ${feeWei} wei`)
       this.print(messages.join('\n'))
-      const total = BigNumber.from(amountWei).add(feeWei)
+      const total = amountWei.add(feeWei)
       if (BigNumber.from(balance.eth).lt(total)) {
         this.print(chalk.red('Not enough balance. Try again'))
       } else {
@@ -54,10 +51,7 @@ export default class DepositEther extends App {
       name: 'confirmed',
       initial: true,
       message: chalk.blue(
-        `Deposit: ${fromWei(amountWei, 'ether')} ETH / Fee: ${fromWei(
-          feeWei,
-          'ether',
-        )} ETH`,
+        `Deposit: ${utils.formatEther(amountWei)} ETH / Fee: ${utils.formatEther(feeWei)} ETH`,
       ),
     })
     if (!confirmed) {
