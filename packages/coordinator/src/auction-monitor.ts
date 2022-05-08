@@ -279,7 +279,7 @@ export class AuctionMonitor {
         if (
           highBid.amount.add(highBid.amount.div(10)).lt(this.maxBid) &&
           highBid.owner.toLowerCase() !==
-          (await this.account.getAddress()).toLowerCase()
+            (await this.account.getAddress()).toLowerCase()
         ) {
           roundsToBid.push(x)
         }
@@ -370,7 +370,7 @@ export class AuctionMonitor {
     }
     if (
       bidder.toLowerCase() !==
-      (await this.account.getAddress()).toLowerCase() &&
+        (await this.account.getAddress()).toLowerCase() &&
       !amount.gt(this.maxBid) &&
       currentRound - this.currentRound <= this.roundBidThreshold
     ) {
