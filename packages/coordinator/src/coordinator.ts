@@ -272,7 +272,7 @@ export class Coordinator extends EventEmitter {
       logger.info(`coordinator/coordinator.ts - Bidding on round ${x}`)
       const tx = await auction
         .connect(this.context.account)
-        ['bid(uint256)'](x, { value: nextBid })
+      ['bid(uint256)'](x, { value: nextBid })
       const receipt = tx.wait()
       promises.push(receipt)
     }
@@ -546,7 +546,7 @@ export class Coordinator extends EventEmitter {
     this.layer1().provider.off('block', this.gasHandler)
   }
 
-  private async gasHandler() {
+  private gasHandler = async () => {
     this.context.gasPrice = Fp.from(await this.layer1().provider.getGasPrice())
   }
 }
