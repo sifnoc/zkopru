@@ -25,7 +25,11 @@ export default class ConfigureAccount extends Configurator {
         JSON.stringify(this.base.keystore),
         password,
       )
-      return { context: { ...context, account }, next: Menu.LOAD_DATABASE }
+      const connectedAccount = account.connect(context.provider)
+      return { 
+        context: { ...context, account: connectedAccount },
+        next: Menu.LOAD_DATABASE
+      }
     }
     let choice: number
     if (this.base.daemon) {
