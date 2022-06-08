@@ -272,7 +272,7 @@ export class Coordinator extends EventEmitter {
       logger.info(`coordinator/coordinator.ts - Bidding on round ${x}`)
       const tx = await auction
         .connect(this.context.account)
-        ['bid(uint256)'](x, { value: nextBid })
+      ['bid(uint256)'](x, { value: nextBid })
       const receipt = tx.wait()
       promises.push(receipt)
     }

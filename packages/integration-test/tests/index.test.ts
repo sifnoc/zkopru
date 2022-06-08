@@ -1,5 +1,5 @@
 import chai from 'chai'
-// import { BigNumber } from 'ethers'
+import { BigNumber } from 'ethers'
 // import { parseEther } from 'ethers/lib/utils'
 // import { ethers } from 'hardhat'
 import { Bytes32 } from 'soltypes'
@@ -8,6 +8,7 @@ import { GroveSnapshot } from '~tree/grove'
 import { sleep } from '~utils'
 import { Context, initContext, terminate } from './context'
 import {
+  testNewCoordinatorAccount,
   testAliceAccount,
   testCarlAccount,
   testBobAccount,
@@ -73,6 +74,15 @@ import {
   testRound3SendZkTxsToCoordinator,
   testRound3NewBlockProposalAndSlashing,
 } from './cases/10_zk_tx_round_3'
+import {
+  testInvalidBid,
+  stakeForBeingCoordintor,
+  setUrlForActiveCoordinator,
+  initializeAuctionConditions,
+  bidSlotsByCoordinator,
+  bidSlotByNewCoordinator,
+  bidSlotsAgainByCoordinator,
+} from './cases/11_auction'
 
 const { expect } = chai
 
@@ -97,11 +107,18 @@ describe('testnet', () => {
   })
   describe('1: Zk Account', () => {
     it(
-      'alice should have 100 ETH for her initial balance',
+      `newCoordinator should have 1000 ETH for its initial balance`,
+      testNewCoordinatorAccount(ctx),
+    )
+    it(
+      'alice should have 1000 ETH for her initial balance',
       testAliceAccount(ctx),
     )
-    it('bob should have 100 ETH for his initial balance', testBobAccount(ctx))
-    it('carl should have 100 ETH for his initial balance', testCarlAccount(ctx))
+    it('bob should have 1000 ETH for his initial balance', testBobAccount(ctx))
+    it(
+      'carl should have 1000 ETH for his initial balance',
+      testCarlAccount(ctx),
+    )
   })
   describe('2: Register verifying keys', () => {
     it('coordinator can register vks', testRegisterVKs(ctx))
@@ -261,7 +278,6 @@ describe('testnet', () => {
         'they should send zk transactions to the coordinator',
         testRound4SendZkTxsToCoordinator(ctx, subCtx),
       )
-
       it(
         'coordinator should propose a new block and wallet clients detect them',
         testRound4NewBlockProposal(ctx, subCtx),
@@ -376,7 +392,44 @@ describe('testnet', () => {
       )
     })
   })
-  describe('11: Migration', () => {
+  describe(`11: bidding test by two coordinators`, () => {
+    let bidArguments: {
+      round: BigNumber
+      targetRound: BigNumber
+      minBid: BigNumber
+      minNextBid: BigNumber
+    }
+    const getBidArguments = () => bidArguments
+    describe(`register A new coordinator`, () => {
+      it(`new coordinator trying to bid without staking`, testInvalidBid(ctx)),
+        it(
+          `new coordinator stake Eth can be coordinator`,
+          stakeForBeingCoordintor(ctx),
+        ),
+        it(
+          `new coordinator set url to being active`,
+          setUrlForActiveCoordinator(ctx),
+        )
+    })
+    describe(`coordinator and newCoordinator bid slots`, () => {
+      it(`initialize testing condition and get arguments for testing`, async () => {
+        bidArguments = await initializeAuctionConditions(ctx)
+      })
+      it(
+        `coordinator bid slots to be highest bidder`,
+        bidSlotsByCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `new coordinator bid the slot placed highest bidder as the coordinator`,
+        bidSlotByNewCoordinator(ctx, getBidArguments),
+      )
+      it(
+        `the coordinator take back highest bidder the slot taken by highest bidder`,
+        bidSlotsAgainByCoordinator(ctx, getBidArguments),
+      )
+    })
+  })
+  describe('12: Migration', () => {
     it('please add test scenarios here')
   })
 })
