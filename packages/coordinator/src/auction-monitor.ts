@@ -69,7 +69,7 @@ export class AuctionMonitor {
     this.consensusAddress = '0x0000000000000000000000000000000000000000'
     this.account = account
     this.port = config.port
-    this.maxBid = BigNumber.from(config.maxBid)
+    this.maxBid = BigNumber.from(config.maxBid).mul(10 ** 9) // gwei to wei
     this.nodeUrl = config.publicUrls || ''
     this.coordinatorManager = new CoordinatorManager(
       this.node.layer1.address,
