@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase, no-underscore-dangle */
 import assert from 'assert'
-import { logger, Worker } from '@zkopru/utils'
+import { logger, sleep, Worker } from '@zkopru/utils'
+import { DepositEvent } from '@zkopru/contracts/typechain/IUserInteractable'
 import { TypedEvent, TypedListener } from '@zkopru/contracts/typechain/common'
 import {
   DB,
@@ -33,6 +34,8 @@ export class Synchronizer extends EventProcessor {
 
   blockCache: BlockCache
 
+  depositNoteHashes: { [noteHash: string]: boolean }
+
   l1Contract!: L1Contract
 
   accounts?: ZkAddress[]
@@ -62,27 +65,27 @@ export class Synchronizer extends EventProcessor {
 
   depositUtxoSubscribers: {
     [account: string]:
-      | TypedListener<
-          [
-            BigNumber,
-            BigNumber,
-            BigNumber,
-            string,
-            BigNumber,
-            BigNumber,
-            BigNumber,
-          ],
-          {
-            spendingPubKey: BigNumber
-            salt: BigNumber
-            eth: BigNumber
-            token: string
-            amount: BigNumber
-            nft: BigNumber
-            fee: BigNumber
-          }
-        >
-      | undefined
+    | TypedListener<
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+      ],
+      {
+        spendingPubKey: BigNumber
+        salt: BigNumber
+        eth: BigNumber
+        token: string
+        amount: BigNumber
+        nft: BigNumber
+        fee: BigNumber
+      }
+    >
+    | undefined
   } = {}
 
   massDepositSubscriber?: TypedListener<
@@ -142,6 +145,7 @@ export class Synchronizer extends EventProcessor {
     )
     this.db = db
     this.blockCache = blockCache
+    this.depositNoteHashes = {}
     this.l1Contract = l1Contract
     this.isListening = false
     this.fetching = {}
@@ -164,6 +168,7 @@ export class Synchronizer extends EventProcessor {
     )
     this.setStatus(NetworkStatus.ON_SYNCING)
     this.loadGenesis()
+    this.loadDepositHashes()
     if (!this.isListening) {
       const errHandler = (method: string) => (err: Error) => {
         logger.error(`core/synchronizer - error at ${method} ${err.toString()}`)
@@ -267,6 +272,16 @@ export class Synchronizer extends EventProcessor {
 
   isSynced(): boolean {
     return this.status === NetworkStatus.FULLY_SYNCED
+  }
+
+  async loadDepositHashes() {
+    this.depositNoteHashes = (
+      await this.db.findMany('Deposit', { where: {} })
+    ).reduce((acc, deposit) => {
+      acc[deposit.note] = true
+      return acc
+    }, {})
+    this.depositNoteHashes['0'] = true // this is for load complete check flag
   }
 
   async updateStatus() {
@@ -549,7 +564,48 @@ export class Synchronizer extends EventProcessor {
     }
   }
 
+  async checkDuplicateNotes(events: DepositEvent[]): Promise<DepositEvent[]> {
+    const notDupNoteDeposits: any[] = []
+    const depositNoteHashes: any[] = []
+    try {
+      logger.trace(`core/sync - Syncronizer::events length: ${events.length}`)
+      for (const event of [events].flat()) {
+        const { args, logIndex, transactionIndex, blockNumber } = event
+        const { note, fee, queuedAt } = args
+        const deposit: DepositSql = {
+          note: note.toString(),
+          fee: fee.toString(),
+          queuedAt: queuedAt.toString(),
+          transactionIndex,
+          logIndex,
+          blockNumber,
+        }
+
+        if (!this.depositNoteHashes[deposit.note]) {
+          depositNoteHashes.push(deposit.note)
+          notDupNoteDeposits.push(event)
+        }
+      }
+    } catch (error) {
+      logger.error(
+        `core/synchronizer - Synchronizer::Error while checking dup notes: ${error}`,
+      )
+    }
+    for (const note of depositNoteHashes) this.depositNoteHashes[note] = true
+    logger.trace(
+      `core/synchronizer - Synchronizer::note::count: ${Object.keys(this.depositNoteHashes).length
+      }`,
+    )
+    return notDupNoteDeposits
+  }
+
   async listenDeposits(cb?: (deposit: DepositSql) => void) {
+    while (this.depositNoteHashes === {}) {
+      logger.trace(
+        `core/synchronizer - Synchronizer::waiting depositCache updated`,
+      )
+      await sleep(200)
+    }
     logger.trace(`core/synchronizer - Synchronizer::listenDeposits()`)
     await this.loadGenesisIfNeeded()
     const { proposedAt } = await this.db.findOne('Proposal', {
@@ -580,9 +636,11 @@ export class Synchronizer extends EventProcessor {
         start,
         end,
       )
-      if (events.length > 0) {
+      // check duplicated deposit
+      const filteredEvents = await this.checkDuplicateNotes(events)
+      if (filteredEvents.length > 0) {
         await this.db.transaction(db => {
-          this.handleDepositEvents(events, db, cb)
+          this.handleDepositEvents(filteredEvents, db, cb)
         })
       }
       currentBlock = end + 1
@@ -596,9 +654,10 @@ export class Synchronizer extends EventProcessor {
         logger.info(
           `core/synchronizer - NewDeposit(${typedEvent.args.note.toString()})`,
         )
+        const filteredEvent = await this.checkDuplicateNotes([typedEvent])
         await this.blockCache.transactionCache(
           db => {
-            this.handleDepositEvents([typedEvent], db, cb)
+            this.handleDepositEvents(filteredEvent, db, cb)
           },
           blockNumber,
           blockHash,
