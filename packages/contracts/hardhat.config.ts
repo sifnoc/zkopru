@@ -15,6 +15,9 @@ dotenv.config();
 const config: HardhatUserConfig = {
   solidity: "0.7.4",
   networks: {
+    hardhat: {
+      chainId: 20200406
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
