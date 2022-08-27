@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase, no-underscore-dangle */
+import * as uuid from 'uuid'
 import assert from 'assert'
 import { logger, Worker } from '@zkopru/utils'
 import {
@@ -473,6 +474,7 @@ export class Synchronizer extends EventEmitter {
       for (const event of [events].flat()) {
         const { returnValues, logIndex, transactionIndex, blockNumber } = event
         const deposit: DepositSql = {
+          id: uuid.v4(),
           note: Uint256.from(returnValues.note).toString(),
           fee: Uint256.from(returnValues.fee).toString(),
           queuedAt: Uint256.from(returnValues.queuedAt).toString(),
@@ -480,11 +482,15 @@ export class Synchronizer extends EventEmitter {
           logIndex,
           blockNumber,
         }
-        db.upsert('Deposit', {
-          where: { note: deposit.note },
-          update: deposit,
-          create: deposit,
-        })
+        try {
+          db.upsert('Deposit', {
+            where: { id: deposit.id },
+            update: deposit,
+            create: deposit,
+          })
+        } catch (error) {
+          logger.error(`core/even-processor - deposit upsert error: ${error}`)
+        }
         db.delete('PendingDeposit', {
           where: {
             note: deposit.note,
