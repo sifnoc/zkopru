@@ -4,11 +4,17 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
-import { deploy } from "../utils/deployer";
+import { deploy, DeployOption } from "../utils/deployer";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { zkopru } = await deploy(deployer);
+  const { SKIPCOMPLTESETUP, INTEGRATIONTEST, LOG } = process.env
+  const option: DeployOption = {
+    skipCompleteSetup: SKIPCOMPLTESETUP ? true : false,
+    integrationTest: INTEGRATIONTEST ? true : false,
+    log: LOG ? true : false
+  }
+  const { zkopru } = await deploy(deployer, option);
   console.log("Zkopru is deployed to: ", zkopru.zkopru.address);
 }
 

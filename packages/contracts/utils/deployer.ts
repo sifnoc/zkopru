@@ -49,6 +49,7 @@ const poseidonGenContract = require("circomlib/src/poseidon_gencontract.js");
 
 let log = false;
 export interface DeployOption {
+  skipCompleteSetup?: boolean;
   integrationTest?: boolean;
   log?: boolean;
 }
@@ -418,7 +419,9 @@ export async function migrateTest(
     await consensus.burnAuction.register({ value: "32000000000000000000" });
   }
   // Complete setup
-  await dest.completeSetup();
+  if (!option?.skipCompleteSetup) {
+    await dest.completeSetup();
+  }
 }
 
 export async function deploy(
