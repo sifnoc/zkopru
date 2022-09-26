@@ -8,9 +8,9 @@ import { deploy, DeployOption } from "../utils/deployer";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { SKIPCOMPLTESETUP, INTEGRATIONTEST, LOG } = process.env
+  const { SKIPCOMPLETESETUP, INTEGRATIONTEST, LOG } = process.env
   const option: DeployOption = {
-    skipCompleteSetup: SKIPCOMPLTESETUP ? true : false,
+    skipCompleteSetup: SKIPCOMPLETESETUP ? true : false,
     integrationTest: INTEGRATIONTEST ? true : false,
     log: LOG ? true : false
   }

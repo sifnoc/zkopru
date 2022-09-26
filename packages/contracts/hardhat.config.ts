@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
@@ -15,6 +16,9 @@ dotenv.config();
 const config: HardhatUserConfig = {
   solidity: "0.7.4",
   networks: {
+    localhost: {
+      url: "http://127.0.0.1:5000"
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
