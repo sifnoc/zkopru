@@ -6,9 +6,9 @@ workflows:
       # - lint:
       #     requires:
       #       - build
-      - load_keys:
-          requires:
-            - build
+      # - load_keys:
+      #     requires:
+      #       - build
       # - test_circuits:
       #     requires:
       #       - build_keys
