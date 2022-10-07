@@ -1,6 +1,6 @@
 // import chai from 'chai'
 import assert from 'assert'
-import { FullNode } from '@zkopru/core'
+import { FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
 import { sleep, trimHexToLength } from '~utils'

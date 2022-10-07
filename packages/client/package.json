@@ -11,6 +11,7 @@
   "_moduleAliases": {
     "~account": "../account/dist",
     "~client": "dist",
+    "~core": "../core/dist",
     "~contracts-utils": "../contracts/utils",
     "~coordinator": "../coordinator/dist",
     "~database": "../database/dist",

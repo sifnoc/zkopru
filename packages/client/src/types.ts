@@ -1,5 +1,5 @@
 import { ZkAccount } from '@zkopru/account'
-import { BaseProvider } from '@ethersproject/providers'
+import { Provider } from '@ethersproject/providers'
 
 export enum RpcType {
   http = 0,
@@ -8,7 +8,7 @@ export enum RpcType {
 export interface RpcConfig {
   type: RpcType
   url: string
-  l1Provider?: BaseProvider
+  l1Provider?: Provider
 }
 
 export interface Block {

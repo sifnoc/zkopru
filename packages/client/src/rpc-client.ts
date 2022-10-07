@@ -1,8 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 import {
-  BaseProvider,
+  Provider,
   WebSocketProvider,
   JsonRpcProvider,
+  BaseProvider,
 } from '@ethersproject/providers'
 import { RpcType, RpcConfig, Block, Tx, Registry } from './types'
 import fetch from './fetch'
@@ -23,7 +24,7 @@ enum RpcMethod {
 export default class RpcClient {
   config: RpcConfig
 
-  private _provider?: BaseProvider
+  private _provider?: Provider
 
   constructor(config: RpcConfig | string) {
     if (typeof config === 'string' && config.indexOf('http') === 0) {
