@@ -6,39 +6,39 @@ workflows:
       # - lint:
       #     requires:
       #       - build
-      # - load_keys:
-      #     requires:
-      #       - build
+      - load_keys:
+          requires:
+            - build
       # - test_circuits:
       #     requires:
       #       - build_keys
-      # - test_coordinator:
-      #     requires:
-      #       - build
-      # - test_accounts:
-      #     requires:
-      #       - build
-      # - test_tree:
-      #     requires:
-      #       - build
-      # - test_babyjubjub:
-      #     requires:
-      #       - build
-      # - test_client:
-      #     requires:
-      #       - build
-      # - test_database:
-      #     requires:
-      #       - build
-      # - test_zkwizard:
-      #     requires:
-      #       - load_keys
-      # - test_integration:
-      #     requires:
-      #       - load_keys
-      # - test_utils:
-      #     requires:
-      #       - build
+      - test_coordinator:
+          requires:
+            - build
+      - test_accounts:
+          requires:
+            - build
+      - test_tree:
+          requires:
+            - build
+      - test_babyjubjub:
+          requires:
+            - build
+      - test_client:
+          requires:
+            - build
+      - test_database:
+          requires:
+            - build
+      - test_zkwizard:
+          requires:
+            - load_keys
+      - test_integration:
+          requires:
+            - load_keys
+      - test_utils:
+          requires:
+            - build
       - test_cli:
           requires:
             - build
@@ -95,7 +95,7 @@ jobs:
           no_output_timeout: 120m
   test_coordinator:
     machine:
-      image: ubuntu-2204:2022.07.1
+      image: ubuntu-2004:202111-01
     steps:
       - attach_workspace:
           at: ~/
