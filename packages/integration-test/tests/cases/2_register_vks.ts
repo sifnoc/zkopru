@@ -1,9 +1,6 @@
-import chai from 'chai'
-
 import { BigNumber, BigNumberish } from 'ethers'
 import { CtxProvider } from '../context'
 
-const { expect } = chai
 type Point = [BigNumberish, BigNumberish]
 export const testRegisterVKs = (ctx: CtxProvider) => async () => {
   const { contract, vks, accounts } = ctx()
@@ -41,7 +38,7 @@ export const testRegisterVKs = (ctx: CtxProvider) => async () => {
       registeredNum += 1
     }
   }
-  expect(registeredNum).to.eq(16)
+  expect(registeredNum).toEqual(16)
 }
 
 export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
@@ -71,7 +68,7 @@ export const testRegisterVKFails = (ctx: CtxProvider) => async () => {
       ic: sampleVk.IC.map((ic: string[]) => ({ X: ic[0], Y: ic[1] })),
     },
   )
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.alice.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.bob.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.carl.ethAccount.sendTransaction(tx)).rejects.toThrow()
 }

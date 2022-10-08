@@ -1,37 +1,35 @@
-import chai from 'chai'
-
 import { sleep } from '~utils'
 import { Address } from 'soltypes'
 import { ZkWallet } from '~zk-wizard'
 import { verifyingKeyIdentifier } from '~core'
 import { CtxProvider } from '../context'
 
-const { expect } = chai
-
 export const testCompleteSetup = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   console.log('Now Genesis!')
   const tx = await contract.zkopru.populateTransaction.completeSetup()
   console.log('Genesis!')
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
+  await expect(accounts.alice.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.bob.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.carl.ethAccount.sendTransaction(tx)).rejects.toThrow()
   const response = await accounts.coordinator.ethAccount.sendTransaction(tx)
   const receipt = await response.wait()
-  expect(receipt.status).to.eq(1)
+  expect(receipt.status).toBe(1)
 }
 
 export const testRejectVkRegistration = (ctx: CtxProvider) => async () => {
   const { accounts, contract } = ctx()
   const tx = await contract.setup.populateTransaction.completeSetup()
 
-  await expect(accounts.alice.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.bob.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.carl.ethAccount.sendTransaction(tx)).to.be.reverted
-  await expect(accounts.newCoordinator.ethAccount.sendTransaction(tx)).to.be
-    .reverted
-  await expect(accounts.coordinator.ethAccount.sendTransaction(tx)).to.be
-    .reverted
+  await expect(accounts.alice.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.bob.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(accounts.carl.ethAccount.sendTransaction(tx)).rejects.toThrow()
+  await expect(
+    accounts.newCoordinator.ethAccount.sendTransaction(tx),
+  ).rejects.toThrow()
+  await expect(
+    accounts.coordinator.ethAccount.sendTransaction(tx),
+  ).rejects.toThrow()
 }
 
 export const updateVerifyingKeys = (ctx: CtxProvider) => async () => {
@@ -87,5 +85,5 @@ export const testRegisterTokens = (ctx: CtxProvider) => async () => {
       carlSyncedNewTokenRegistration
     if (!synced) await sleep(500)
   } while (!synced)
-  expect(synced).to.eq(true)
+  expect(synced).toEqual(true)
 }

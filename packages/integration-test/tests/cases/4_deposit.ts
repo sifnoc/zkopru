@@ -1,11 +1,7 @@
-import chai from 'chai'
-
 import { sleep } from '~utils'
 import { parseUnits } from 'ethers/lib/utils'
 import assert from 'assert'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 export const depositEther = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
@@ -15,7 +11,7 @@ export const depositEther = (ctx: CtxProvider) => async () => {
         parseUnits('10', 'ether'),
         parseUnits('0.001', 'ether'),
       ),
-    ).to.be.true
+    ).toEqual(true)
   }
 }
 
@@ -42,7 +38,7 @@ export const bobDepositsErc20 = (ctx: CtxProvider) => async () => {
       amount,
       parseUnits('0.01', 'ether'),
     ),
-  ).to.be.true
+  ).toEqual(true)
 }
 
 export const depositERC721 = (ctx: CtxProvider) => async () => {
@@ -70,7 +66,7 @@ export const depositERC721 = (ctx: CtxProvider) => async () => {
       '1',
       parseUnits('0.01', 'ether'),
     ),
-  ).to.be.true
+  ).toEqual(true)
 }
 
 export const testMassDeposits = (ctx: CtxProvider) => async () => {
@@ -89,5 +85,5 @@ export const testMassDeposits = (ctx: CtxProvider) => async () => {
     if (!synced) await sleep(500)
     synced = await isSynced()
   } while (!synced)
-  expect(synced).to.eq(true)
+  expect(synced).toEqual(true)
 }

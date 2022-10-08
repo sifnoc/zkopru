@@ -12,21 +12,21 @@ workflows:
       # - test_circuits:
       #     requires:
       #       - build_keys
-      - test_coordinator:
-          requires:
-            - build
-      - test_accounts:
-          requires:
-            - build
-      - test_tree:
-          requires:
-            - build
-      - test_babyjubjub:
-          requires:
-            - build
-      - test_client:
-          requires:
-            - build
+      # - test_coordinator:
+      #     requires:
+      #       - build
+      # - test_accounts:
+      #     requires:
+      #       - build
+      # - test_tree:
+      #     requires:
+      #       - build
+      # - test_babyjubjub:
+      #     requires:
+      #       - build
+      # - test_client:
+      #     requires:
+      #       - build
       - test_database:
           requires:
             - build
@@ -36,9 +36,9 @@ workflows:
       - test_integration:
           requires:
             - load_keys
-      - test_utils:
-          requires:
-            - build
+      # - test_utils:
+      #     requires:
+      #       - build
       - test_cli:
           requires:
             - build
@@ -191,7 +191,9 @@ jobs:
           at: ~/
       - run:
           name: Integration Tests
-          command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
+          command: |
+            cd packages/integration-test
+            LOG_LEVEL=debug yarn test
   test_cli:
     machine:
       image: ubuntu-2004:2022.07.1

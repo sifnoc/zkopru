@@ -1,12 +1,9 @@
-import chai from 'chai'
 import { Sum, SwapTxBuilder, Utxo, ZkTx } from '~transaction'
 import { Fp } from '~babyjubjub'
 import { sleep } from '~utils'
 import { parseUnits } from 'ethers/lib/utils'
 import { Bytes32 } from 'soltypes'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 const WEI_PER_BYTE = parseUnits('100000', 'gwei')
 
@@ -44,7 +41,7 @@ export const buildZkSwapTxAliceSendEthToBobAndReceiveERC20 = async (
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
 
-  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).to.eq(
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toEqual(
     alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
 
@@ -87,7 +84,7 @@ export const buildZkSwapTxBobSendERC20ToAliceAndReceiveEther = async (
     (bobNewBalance.erc20[tokenAddr] || Fp.zero).add(
       bobLockedAmount.erc20[tokenAddr] || Fp.zero,
     ),
-  ).to.eq(
+  ).toEqual(
     (bobPrevBalance.erc20[tokenAddr] || Fp.zero).add(
       bobPrevLocked.erc20[tokenAddr] || Fp.zero,
     ),
@@ -106,7 +103,7 @@ export const testRound4SendZkTxsToCoordinator = (
   const { wallets } = ctx()
   const { aliceSwap, bobSwap } = txs()
   const r = await wallets.alice.sendLayer2Tx([aliceSwap, bobSwap])
-  expect(r.status).to.eq(200)
+  expect(r.status).toEqual(200)
 }
 
 export const testRound4NewBlockProposal = (
@@ -136,7 +133,7 @@ export const testRound4NewBlockProposal = (
     await sleep(1000)
   } while (!updated)
   const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
-  expect(newBlock?.body.txs).to.have.length(2)
+  expect(newBlock?.body.txs).toEqual(2)
 }
 
 export const testRound4NewSpendableUtxos = (
@@ -163,17 +160,27 @@ export const testRound4NewSpendableUtxos = (
   const erc20Amount = parseUnits('1', 'ether')
   const ethAmount = parseUnits('1', 'ether')
 
-  expect(aliceBalanceAfter.erc20[tokenAddr]).to.eq(
-    (aliceSpendablesBefore.erc20[tokenAddr] || Fp.zero).add(erc20Amount),
+  expect(aliceBalanceAfter.erc20[tokenAddr].toString()).toEqual(
+    (aliceSpendablesBefore.erc20[tokenAddr] || Fp.zero)
+      .add(erc20Amount)
+      .toString(),
   )
-  expect(bobBalanceAfter.erc20[tokenAddr]).to.eq(
-    (bobSpendablesBefore.erc20[tokenAddr] || Fp.zero).sub(erc20Amount),
+  expect(bobBalanceAfter.erc20[tokenAddr].toString()).toEqual(
+    (bobSpendablesBefore.erc20[tokenAddr] || Fp.zero)
+      .sub(erc20Amount)
+      .toString(),
   )
 
-  expect(aliceBalanceAfter.eth).to.eq(
-    (aliceSpendablesBefore.eth || Fp.zero).sub(ethAmount).sub(aliceSwap.fee),
+  expect(aliceBalanceAfter.eth.toString()).toEqual(
+    (aliceSpendablesBefore.eth || Fp.zero)
+      .sub(ethAmount)
+      .sub(aliceSwap.fee)
+      .toString(),
   )
-  expect(bobBalanceAfter.eth).to.eq(
-    (bobSpendablesBefore.eth || Fp.zero).add(ethAmount).sub(bobSwap.fee),
+  expect(bobBalanceAfter.eth.toString()).toEqual(
+    (bobSpendablesBefore.eth || Fp.zero)
+      .add(ethAmount)
+      .sub(bobSwap.fee)
+      .toString(),
   )
 }

@@ -1,12 +1,9 @@
-import chai from 'chai'
 import { TxBuilder, Utxo, ZkTx } from '~transaction'
 import { Fp } from '~babyjubjub'
 import { sleep } from '~utils'
 import { Bytes32 } from 'soltypes'
 import { parseUnits } from 'ethers/lib/utils'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 export const buildZkTxAliceSendEthToBob = async (
   ctx: CtxProvider,
@@ -32,7 +29,7 @@ export const buildZkTxAliceSendEthToBob = async (
   })
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
-  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).to.eq(
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toEqual(
     alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
   return aliceZkTx
@@ -72,7 +69,7 @@ export const buildZkTxBobSendERC20ToCarl = async (
   const bobLockedAmount = (await bobWallet.getLockedAmount(bob)).getERC20(
     tokenAddr,
   )
-  expect(bobNewBalance.add(bobLockedAmount)).to.eq(
+  expect(bobNewBalance.add(bobLockedAmount)).toEqual(
     bobPrevBalance.add(bobPrevLocked),
   )
   return bobZkTx
@@ -112,7 +109,7 @@ export const buildZkTxCarlSendNftToAlice = async (
     JSON.stringify(
       [...carlLockedNFTs, ...carlNewNFTs].map(f => f.toString()).sort(),
     ),
-  ).to.eq(JSON.stringify(carlPrevNFTs.map(f => f.toString()).sort()))
+  ).toEqual(JSON.stringify(carlPrevNFTs.map(f => f.toString()).sort()))
   return carlZkTxal
 }
 
@@ -131,7 +128,7 @@ export const testRound1SendZkTxsToCoordinator = (
     bobTransfer,
     carlTransfer,
   ])
-  expect(r.status).to.eq(200)
+  expect(r.status).toEqual(200)
 }
 
 export const testRound1NewBlockProposal = (
@@ -161,7 +158,7 @@ export const testRound1NewBlockProposal = (
     await sleep(1000)
   } while (!updated)
   const newBlock = await wallets.alice.node.layer2.getBlock(newBlockHash)
-  expect(newBlock?.body.txs).to.have.length(3)
+  expect(newBlock?.body.txs.length).toEqual(3)
 }
 
 export const testRound1NewSpendableUtxos = (ctx: CtxProvider) => async () => {
@@ -169,10 +166,12 @@ export const testRound1NewSpendableUtxos = (ctx: CtxProvider) => async () => {
   const aliceBalance = await wallets.alice.getSpendableAmount()
   const bobBalance = await wallets.bob.getSpendableAmount()
   const carlBalance = await wallets.carl.getSpendableAmount()
-  expect(aliceBalance.erc721[tokens.erc721.address].find(nft => nft.eq(1))).to
-    .exist
-  expect(carlBalance.erc20[tokens.erc20.address]).to.eq(
-    parseUnits('1', 'ether'),
+  expect(aliceBalance.erc721[tokens.erc721.address].find(nft => nft.eq(1)))
+    .toBeDefined
+  expect(carlBalance.erc20[tokens.erc20.address].toString()).toEqual(
+    parseUnits('1', 'ether').toString(),
   )
-  expect(bobBalance.erc20[tokens.erc20.address]).to.eq(parseUnits('9', 'ether'))
+  expect(bobBalance.erc20[tokens.erc20.address].toString()).toEqual(
+    parseUnits('9', 'ether').toString(),
+  )
 }

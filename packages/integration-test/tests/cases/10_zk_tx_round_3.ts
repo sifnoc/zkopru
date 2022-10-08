@@ -1,4 +1,3 @@
-import chai from 'chai'
 import { TxBuilder, Utxo, ZkTx } from '~transaction'
 import { Fp } from '~babyjubjub'
 import { sleep } from '~utils'
@@ -6,8 +5,6 @@ import { parseUnits } from 'ethers/lib/utils'
 import { Uint256 } from 'soltypes'
 import { Block } from '~core'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 export const buildZkTxAliceSendEthToBob = async (
   ctx: CtxProvider,
@@ -33,7 +30,7 @@ export const buildZkTxAliceSendEthToBob = async (
   })
   const aliceNewBalance = await aliceWallet.getSpendableAmount(alice)
   const aliceLockedAmount = await aliceWallet.getLockedAmount(alice)
-  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).to.eq(
+  expect(aliceNewBalance.eth.add(aliceLockedAmount.eth)).toEqual(
     alicePrevBalance.eth.add(alicePrevLocked.eth),
   )
   return aliceZkTx
@@ -63,7 +60,7 @@ export const buildZkTxBobSendEthToCarl = async (
   })
   const bobNewBalance = await bobWallet.getSpendableAmount(bob)
   const bobLockedAmount = await bobWallet.getLockedAmount(bob)
-  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).to.eq(
+  expect(bobNewBalance.eth.add(bobLockedAmount.eth)).toEqual(
     bobPrevBalance.eth.add(bobPrevLocked.eth),
   )
   return bobZkTx
@@ -93,7 +90,7 @@ export const buildZkTxCarlSendEthToAlice = async (
   })
   const carlNewBalance = await carlWallet.getSpendableAmount(carl)
   const carlLockedAmount = await carlWallet.getLockedAmount(carl)
-  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).to.eq(
+  expect(carlNewBalance.eth.add(carlLockedAmount.eth)).toEqual(
     carlPrevBalance.eth.add(carlPrevLocked.eth),
   )
   return carlZkTx
@@ -115,7 +112,7 @@ export const testRound3SendZkTxsToCoordinator = (
     bobTransfer,
     carlTransfer,
   ])
-  expect(r.status).to.eq(200)
+  expect(r.status).toEqual(200)
 }
 
 export const testRound3NewBlockProposalAndSlashing = (
@@ -176,10 +173,10 @@ export const testRound3NewBlockProposalAndSlashing = (
   const carlLatestBlock = await wallets.carl.node.layer2.latestBlock()
   const coordinatorLatestBlock = await coordinator.node().layer2.latestBlock()
   // Nodes should throw away the slashed block
-  expect(slashed).to.be.true
-  expect(aliceLatestBlock.eq(prevLatestBlock)).to.be.true
-  expect(bobLatestBlock.eq(prevLatestBlock)).to.be.true
-  expect(carlLatestBlock.eq(prevLatestBlock)).to.be.true
-  expect(coordinatorLatestBlock.eq(prevLatestBlock)).to.be.true
+  expect(slashed).toEqual(true)
+  expect(aliceLatestBlock.eq(prevLatestBlock)).toEqual(true)
+  expect(bobLatestBlock.eq(prevLatestBlock)).toEqual(true)
+  expect(carlLatestBlock.eq(prevLatestBlock)).toEqual(true)
+  expect(coordinatorLatestBlock.eq(prevLatestBlock)).toEqual(true)
   coordinator.middlewares.proposer.removePreProcessor()
 }

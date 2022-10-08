@@ -12,17 +12,13 @@ export interface TestFixture {
 }
 
 export class FixtureProvider {
-  private readonly _provider: JsonRpcProvider
-
   private _fixtures?: TestFixture
 
   private _fixtureSnapshotId?: string
 
   private _snapshots: { [key: string]: string } = {}
 
-  constructor() {
-    this._provider = ethers.provider
-  }
+  constructor() {}
 
   async getDeployer(): Promise<SignerWithAddress> {
     return (await ethers.getSigners())[0]
@@ -36,15 +32,15 @@ export class FixtureProvider {
     }
     if (this._fixtureSnapshotId) {
       // snapshot exists.
-      await this._provider.send('evm_revert', [this._fixtureSnapshotId])
+      await ethers.provider.send('evm_revert', [this._fixtureSnapshotId])
     }
-    const newSnapshot = await this._provider.send('evm_snapshot', [])
+    const newSnapshot = await ethers.provider.send('evm_snapshot', [])
     this._fixtureSnapshotId = newSnapshot
     return this._fixtures
   }
 
   async snapshot(key: string): Promise<string> {
-    const newSnapshot = await this._provider.send('evm_snapshot', [])
+    const newSnapshot = await ethers.provider.send('evm_snapshot', [])
     this._snapshots[key] = newSnapshot
     return newSnapshot
   }
@@ -52,11 +48,11 @@ export class FixtureProvider {
   async revert(key: string): Promise<string> {
     const snapshotId = this._snapshots[key]
     if (snapshotId) {
-      await this._provider.send('evm_revert', [snapshotId])
+      await ethers.provider.send('evm_revert', [snapshotId])
     } else {
       throw Error(`No snapshot exists for ${key}`)
     }
-    const newSnapshot = await this._provider.send('evm_snapshot', [])
+    const newSnapshot = await ethers.provider.send('evm_snapshot', [])
     this._snapshots[key] = newSnapshot
     return newSnapshot
   }
@@ -64,21 +60,22 @@ export class FixtureProvider {
   async advanceBlock(n?: number): Promise<void> {
     const times = n ?? 1
     for (let i = 0; i < times; i += 1) {
-      await this._provider.send('evm_mine', [])
+      await ethers.provider.send('evm_mine', [])
+      await new Promise(res => setTimeout(() => res(null), 4000))
     }
   }
 
   async mineBlock(timestamp?: number): Promise<void> {
     if (timestamp) {
-      await this._provider.send('evm_setNextBlockTimestamp', [timestamp])
+      await ethers.provider.send('evm_setNextBlockTimestamp', [timestamp])
     }
 
-    await this._provider.send('evm_mine', [])
+    await this.advanceBlock(1)
   }
 
   async increaseTime(seconds: number): Promise<void> {
-    await this._provider.send('evm_increaseTime', [seconds])
-    await this._provider.send('evm_mine', [])
+    await ethers.provider.send('evm_increaseTime', [seconds])
+    await this.advanceBlock(1)
   }
 
   private async deployContracts(

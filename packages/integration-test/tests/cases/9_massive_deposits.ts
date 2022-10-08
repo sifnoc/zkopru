@@ -1,10 +1,7 @@
-import chai from 'chai'
 import { BigNumber } from 'ethers'
 import { parseUnits } from 'ethers/lib/utils'
 import { sleep } from '~utils'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 export const sendETH = (ctx: CtxProvider) => async () => {
   const { accounts } = ctx()
@@ -50,7 +47,7 @@ export const commitMassDeposit = (ctx: CtxProvider) => async () => {
     pendingDeposits = (await coordinator.layer2().getPendingMassDeposits())
       .leaves.length
   } while (pendingDeposits < 33)
-  expect(pendingDeposits).to.eq(33)
+  expect(pendingDeposits).toEqual(33)
 }
 
 export const waitCoordinatorToProposeANewBlockFor33Deposits = (
@@ -68,7 +65,7 @@ export const waitCoordinatorToProposeANewBlockFor33Deposits = (
     await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   }
-  expect(proposedBlocks).to.be.gt(prevProposalNum)
+  expect(proposedBlocks.toNumber()).toBeGreaterThan(prevProposalNum.toNumber())
 }
 
 // TODO Fix that processed block does not count the genesis block (proposed: 2 / processed: 1)
@@ -100,5 +97,5 @@ export const waitCoordinatorToProcessTheNewBlockFor33Deposits = (
     await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   }
-  expect(success).to.be.true
+  expect(success).toEqual(true)
 }

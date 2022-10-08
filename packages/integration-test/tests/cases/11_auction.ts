@@ -1,10 +1,7 @@
-import chai from 'chai'
 import { BigNumber } from 'ethers'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { BurnAuction } from '@zkopru/contracts'
 import { CtxProvider } from '../context'
-
-const { expect } = chai
 
 export const testInvalidBid = (ctx: CtxProvider) => async () => {
   const { wallets } = ctx()
@@ -23,7 +20,7 @@ export const testInvalidBid = (ctx: CtxProvider) => async () => {
       gasLimit: 1000000, // if not set will be error
     },
   )
-  await expect(newCoordinatorAccount.sendTransaction(bidTx)).to.be.reverted
+  await expect(newCoordinatorAccount.sendTransaction(bidTx)).rejects
 }
 
 export const stakeForBeingCoordintor = (ctx: CtxProvider) => async () => {
@@ -38,7 +35,7 @@ export const stakeForBeingCoordintor = (ctx: CtxProvider) => async () => {
   // stake ether to be coordinator
   expect(
     await newCoordinator.node.layer1.zkopru.isStaked(newCoordinatorAddr),
-  ).to.eq(false)
+  ).toEqual(false)
   try {
     const registerTx = await newCoordinatorAuction.register({
       value: parseEther('32'),
@@ -50,7 +47,7 @@ export const stakeForBeingCoordintor = (ctx: CtxProvider) => async () => {
   }
   expect(
     await newCoordinator.node.layer1.zkopru.isStaked(newCoordinatorAddr),
-  ).to.eq(true)
+  ).toEqual(true)
 }
 
 export const setUrlForActiveCoordinator = (ctx: CtxProvider) => async () => {
@@ -68,7 +65,7 @@ export const setUrlForActiveCoordinator = (ctx: CtxProvider) => async () => {
   let newCoordinatorUrl = await newCoordinatorAuction.coordinatorUrls(
     newCoordinatorAddr,
   )
-  expect(newCoordinatorUrl).to.eq('')
+  expect(newCoordinatorUrl).toEqual('')
 
   try {
     const setUrlTx = await newCoordinatorAuction.setUrl(URL)
@@ -80,7 +77,7 @@ export const setUrlForActiveCoordinator = (ctx: CtxProvider) => async () => {
   newCoordinatorUrl = await newCoordinatorAuction.coordinatorUrls(
     newCoordinatorAddr,
   )
-  expect(newCoordinatorUrl).to.eq(URL)
+  expect(newCoordinatorUrl).toEqual(URL)
 }
 
 // Describe bidding test scenario
@@ -141,7 +138,7 @@ export const initializeAuctionConditions = async (ctx: CtxProvider) => {
       coordinatorPendingValue = await coordinatorAuction.pendingBalances(
         coordinatorAddr,
       )
-      expect(coordinatorPendingValue.toNumber()).to.eq(0)
+      expect(coordinatorPendingValue.toNumber()).toEqual(0)
     } catch (error) {
       console.warn(`coordinator refund error: ${error}`)
     }
@@ -152,8 +149,8 @@ export const initializeAuctionConditions = async (ctx: CtxProvider) => {
       0: amount,
       1: bidder,
     } = await coordinatorAuction.highestBidForRound(i)
-    expect(amount.toString()).to.eq(minBid.toString())
-    expect(bidder).to.eq('0x0000000000000000000000000000000000000000')
+    expect(amount.toString()).toEqual(minBid.toString())
+    expect(bidder).toEqual('0x0000000000000000000000000000000000000000')
   }
   return {
     round,
@@ -204,23 +201,23 @@ export const bidSlotsByCoordinator = (
   const coordinatorPendingValue = await coordinatorAuction.pendingBalances(
     coordinatorAddr,
   )
-  expect(coordinatorPendingValue).to.eq(minNextBid)
+  expect(coordinatorPendingValue).toEqual(minNextBid)
 
   for (let i = round.toNumber() - 1; i > round.toNumber() - 10; i = i - 1) {
     const {
       0: amount,
       1: bidder,
     } = await coordinatorAuction.highestBidForRound(i)
-    expect(amount.toString()).to.eq(minNextBid.toString())
-    expect(bidder).to.eq(coordinatorAddr)
+    expect(amount.toString()).toEqual(minNextBid.toString())
+    expect(bidder).toEqual(coordinatorAddr)
   }
 
   // check boundary, status of a slot over the last bid
   const { 0: amount, 1: bidder } = await coordinatorAuction.highestBidForRound(
     round,
   )
-  expect(amount.toString()).to.eq(minBid.toString())
-  expect(bidder).to.eq('0x0000000000000000000000000000000000000000')
+  expect(amount.toString()).toEqual(minBid.toString())
+  expect(bidder).toEqual('0x0000000000000000000000000000000000000000')
 }
 
 export const bidSlotByNewCoordinator = (
@@ -258,8 +255,8 @@ export const bidSlotByNewCoordinator = (
     0: updatedAmount,
     1: updatedBidder,
   } = await newCoordinatorAuction.highestBidForRound(targetRound)
-  expect(updatedAmount.toString()).to.eq(newBidAmount.toString())
-  expect(updatedBidder).to.eq(newCoordinatorAddr)
+  expect(updatedAmount.toString()).toEqual(newBidAmount.toString())
+  expect(updatedBidder).toEqual(newCoordinatorAddr)
 }
 
 export const bidSlotsAgainByCoordinator = (
@@ -304,9 +301,7 @@ export const bidSlotsAgainByCoordinator = (
     coordinatorAddr,
   )
   for (let i = round.toNumber() - 1; i > round.toNumber() - 11; i = i - 1) {
-    const {
-      1: bidder,
-    } = await coordinatorAuction.highestBidForRound(i)
-    expect(bidder).to.eq(coordinatorAddr)
+    const { 1: bidder } = await coordinatorAuction.highestBidForRound(i)
+    expect(bidder).toEqual(coordinatorAddr)
   }
 }

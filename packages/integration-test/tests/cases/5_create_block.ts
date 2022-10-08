@@ -2,7 +2,6 @@
 /* eslint-disable jest/require-tothrow-message */
 /* eslint-disable jest/no-export */
 /* eslint-disable jest/require-top-level-describe */
-import { expect } from 'chai'
 import { sleep } from '~utils'
 import { BigNumber } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
@@ -30,7 +29,7 @@ export const waitCoordinatorToProposeANewBlock = (
     msToWait -= 1000
     await sleep(1000)
   }
-  expect(proposedBlocks).to.eq(2)
+  expect(proposedBlocks.toNumber()).toBe(2)
 }
 
 // TODO Fix that processed block does not count the genesis block (proposed: 2 / processed: 1)
@@ -47,7 +46,7 @@ export const waitCoordinatorToProcessTheNewBlock = (
     msToWait -= 1000
     await sleep(1000)
   }
-  expect(processedBlocks).to.eq(1)
+  expect(processedBlocks).toEqual(1)
 }
 
 export const testBlockSync = (ctx: CtxProvider) => async () => {
@@ -64,7 +63,7 @@ export const testBlockSync = (ctx: CtxProvider) => async () => {
     await fixtureProvider.advanceBlock(8)
     await sleep(1000)
   }
-  expect(wallets.alice.node.synchronizer.latestProcessed).to.eq(1)
-  expect(wallets.bob.node.synchronizer.latestProcessed).to.eq(1)
-  expect(wallets.carl.node.synchronizer.latestProcessed).to.eq(1)
+  expect(wallets.alice.node.synchronizer.latestProcessed).toEqual(1)
+  expect(wallets.bob.node.synchronizer.latestProcessed).toEqual(1)
+  expect(wallets.carl.node.synchronizer.latestProcessed).toEqual(1)
 }

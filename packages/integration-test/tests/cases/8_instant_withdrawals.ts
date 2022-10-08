@@ -1,4 +1,3 @@
-import chai from 'chai'
 import { WithdrawalStatus } from '~transaction'
 import { sleep } from '~utils'
 import { Address, Uint256 } from 'soltypes'
@@ -6,30 +5,31 @@ import { parseUnits } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
 import { CtxProvider } from '../context'
 
-const { expect } = chai
-
 export const testGetWithdrawablesOfAlice = (ctx: CtxProvider) => async () => {
   const { wallets, accounts } = ctx()
   const { alice } = wallets
   expect(
-    await alice.getWithdrawables(accounts.alice, WithdrawalStatus.UNFINALIZED),
-  ).to.have.length(1)
+    (await alice.getWithdrawables(accounts.alice, WithdrawalStatus.UNFINALIZED))
+      .length,
+  ).toEqual(1)
 }
 
 export const testGetWithdrawablesOfBob = (ctx: CtxProvider) => async () => {
   const { wallets, accounts } = ctx()
   const { bob } = wallets
   expect(
-    await bob.getWithdrawables(accounts.bob, WithdrawalStatus.UNFINALIZED),
-  ).to.have.length(1)
+    (await bob.getWithdrawables(accounts.bob, WithdrawalStatus.UNFINALIZED))
+      .length,
+  ).toEqual(1)
 }
 
 export const testGetWithdrawablesOfCarl = (ctx: CtxProvider) => async () => {
   const { wallets, accounts } = ctx()
   const { carl } = wallets
   expect(
-    await carl.getWithdrawables(accounts.carl, WithdrawalStatus.UNFINALIZED),
-  ).to.have.length(1)
+    (await carl.getWithdrawables(accounts.carl, WithdrawalStatus.UNFINALIZED))
+      .length,
+  ).toEqual(1)
 }
 
 export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
@@ -38,7 +38,7 @@ export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
     accounts.bob,
     WithdrawalStatus.UNFINALIZED,
   )
-  expect(withdrawals).to.have.length(1)
+  expect(withdrawals.length).toEqual(1)
   let updated = false
   do {
     const bobLatestBlock = await wallets.bob.node.layer2.latestBlock()
@@ -67,8 +67,8 @@ export const payForEthWithdrawalInAdvance = (ctx: CtxProvider) => async () => {
     currentTimestamp + 300,
   )
   const nextBalance = await wallets.bob.fetchLayer1Assets(accounts.bob)
-  expect(result).to.be.true
-  expect(nextBalance.eth).to.eq(
+  expect(result).toEqual(true)
+  expect(nextBalance.eth).toEqual(
     BigNumber.from(prevBalance.eth)
       .add(ethWithdrawal.eth)
       .sub(prepayFeeInEth.toBigNumber())
