@@ -42,9 +42,6 @@ workflows:
       - test_cli:
           requires:
             - build
-      - test_contracts:
-          requires:
-            - build
 jobs:
   build:
     machine:

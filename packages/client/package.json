@@ -24,8 +24,9 @@
     "webpack": "webpack-cli",
     "clean": "tsc --build tsconfig.build.json --clean && shx rm -rf coverage *.log junit.xml dist && jest --clearCache",
     "link-modules": "link-module-alias",
-    "test": "yarn test:jest; yarn test:hardhat",
+    "test": "yarn hardhat && sleep 5 && yarn test:jest",
     "test:jest": "jest",
+    "hardhat": "hardhat node &",
     "test:hardhat": "hardhat test tests/rpc.hh.ts",
     "test:trace": "LOG_LEVEL=trace PRINT_LOG=true jest"
   },

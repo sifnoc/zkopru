@@ -3,7 +3,7 @@ import assert from 'assert'
 import { FullNode } from '~core'
 import { Coordinator } from '~coordinator'
 import { ZkAccount } from '~account'
-import { sleep, trimHexToLength } from '~utils'
+import { trimHexToLength } from '~utils'
 import { ethers } from 'hardhat'
 import { deploy } from '~contracts-utils/deployer'
 import { RpcType } from '~client/types'
@@ -12,6 +12,7 @@ import Zkopru from '../src'
 // const { expect } = chai
 
 describe('rPC tests', () => {
+  jest.setTimeout(50000)
   const accounts: ZkAccount[] = [
     new ZkAccount(trimHexToLength(Buffer.from('sample private key'), 64)),
   ]
@@ -26,19 +27,12 @@ describe('rPC tests', () => {
     l1Provider: ethers.provider,
   })
   // setup a coordinator node to query
-  before(async () => {
-    // logStream.addStream(process.stdout)
+  beforeAll(async () => {
     mockup = await SQLiteConnector.create(schema, ':memory:')
-    // It may take about few minutes. If you want to skip building image,
-    // run `yarn pull:images` on the root directory
     const [deployer] = await ethers.getSigners()
     const { zkopru } = await deploy(deployer)
-    // logStream.addStream(process.stdout)
     mockup = await SQLiteConnector.create(schema, ':memory:')
-    // It may take about few minutes. If you want to skip building image,
-    // run `yarn pull:images` on the root directory
     address = zkopru.zkopru.address
-    await sleep(3000)
     fullNode = await FullNode.new({
       provider: ethers.provider,
       address,
@@ -57,7 +51,7 @@ describe('rPC tests', () => {
     await coordinator.start()
   })
 
-  after(async () => {
+  afterAll(async () => {
     await coordinator.stop()
     await mockup.close()
     for (const c of coordinators) {
@@ -138,7 +132,7 @@ describe('rPC tests', () => {
     assert(keys)
   })
 
-  it('should get transaction by hash')
+  it.skip('should get transaction by hash', async()=>{})
 
   it('should get blockNumber', async () => {
     const { provider } = rpc
