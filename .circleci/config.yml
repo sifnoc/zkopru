@@ -180,8 +180,8 @@ jobs:
           name: Utils Tests
           command: yarn test --scope=@zkopru/utils
   test_integration:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2004:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
