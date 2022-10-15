@@ -11,7 +11,7 @@ workflows:
             - build
       - test_circuits:
           requires:
-            - build_keys
+            - load_keys
       - test_coordinator:
           requires:
             - build
