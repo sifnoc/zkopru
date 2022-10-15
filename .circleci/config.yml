@@ -3,36 +3,36 @@ workflows:
   test_app:
     jobs:
       - build
-      # - lint:
-      #     requires:
-      #       - build
+      - lint:
+          requires:
+            - build
       - load_keys:
           requires:
             - build
-      # - test_circuits:
-      #     requires:
-      #       - build_keys
-      # - test_coordinator:
-      #     requires:
-      #       - build
-      # - test_accounts:
-      #     requires:
-      #       - build
-      # - test_tree:
-      #     requires:
-      #       - build
-      # - test_babyjubjub:
-      #     requires:
-      #       - build
-      # - test_client:
-      #     requires:
-      #       - build
-      # - test_database:
-      #     requires:
-      #       - build
-      # - test_zkwizard:
-      #     requires:
-      #       - load_keys
+      - test_circuits:
+          requires:
+            - build_keys
+      - test_coordinator:
+          requires:
+            - build
+      - test_accounts:
+          requires:
+            - build
+      - test_tree:
+          requires:
+            - build
+      - test_babyjubjub:
+          requires:
+            - build
+      - test_client:
+          requires:
+            - build
+      - test_database:
+          requires:
+            - build
+      - test_zkwizard:
+          requires:
+            - load_keys
       - test_integration:
           requires:
             - load_keys
@@ -61,8 +61,8 @@ jobs:
           root: ~/
           paths: project
   lint:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -70,8 +70,8 @@ jobs:
           name: Lint
           command: yarn lint .
   load_keys:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -84,8 +84,8 @@ jobs:
           root: ~/
           paths: project
   test_circuits:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -94,8 +94,8 @@ jobs:
           command: yarn test --scope=@zkopru/circuits
           no_output_timeout: 120m
   test_coordinator:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -103,8 +103,8 @@ jobs:
           name: Coordinator Tests
           command: yarn test --scope=@zkopru/coordinator
   test_contracts:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -117,8 +117,8 @@ jobs:
           name: Contract Tests
           command: yarn test --scope=@zkopru/contracts
   test_accounts:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -126,8 +126,8 @@ jobs:
           name: Account Tests
           command: yarn test --scope=@zkopru/account
   test_tree:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -135,8 +135,8 @@ jobs:
           name: Tree Tests
           command: yarn test --scope=@zkopru/tree
   test_zkwizard:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -144,8 +144,8 @@ jobs:
           name: ZK Wizard Tests
           command: yarn test --scope=@zkopru/zk-wizard
   test_client:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -153,8 +153,8 @@ jobs:
           name: Client Tests
           command: yarn test --scope=@zkopru/client
   test_database:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -162,8 +162,8 @@ jobs:
           name: Database Tests
           command: yarn test --scope=@zkopru/database
   test_babyjubjub:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -171,8 +171,8 @@ jobs:
           name: BabyJubJub Tests
           command: yarn test --scope=@zkopru/babyjubjub
   test_utils:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
