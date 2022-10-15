@@ -181,7 +181,7 @@ jobs:
           command: yarn test --scope=@zkopru/utils
   test_integration:
     machine:
-      image: ubuntu-2004:2022.07.1
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
@@ -190,7 +190,7 @@ jobs:
           command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
   test_cli:
     machine:
-      image: ubuntu-2004:2022.07.1
+      image: ubuntu-2204:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
