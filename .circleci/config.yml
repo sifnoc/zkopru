@@ -189,8 +189,8 @@ jobs:
           name: Integration Tests
           command: LOG_LEVEL=debug yarn test --scope=@zkopru/integration-test
   test_cli:
-    docker:
-      - image: cimg/node:12.22
+    machine:
+      image: ubuntu-2004:2022.07.1
     steps:
       - attach_workspace:
           at: ~/
