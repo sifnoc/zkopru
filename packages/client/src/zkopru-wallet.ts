@@ -40,15 +40,16 @@ export default class ZkopruWallet {
     to: string,
     amountWei: string,
     weiPerByte: number | string,
+    spendables?: Utxo[]
   ): Promise<RawTx> {
     if (!this.wallet.account) {
       throw new Error('Account is not set')
     }
-    const spendables = await this.wallet.getSpendables(this.wallet.account)
+    const selectedUtxo = spendables ?? await this.wallet.getSpendables(this.wallet.account)
     const txBuilder = TxBuilder.from(this.wallet.account.zkAddress)
     try {
       return txBuilder
-        .provide(...spendables.map(note => Utxo.from(note)))
+        .provide(...selectedUtxo.map(note => Utxo.from(note)))
         .weiPerByte(weiPerByte)
         .sendEther({
           eth: Fp.from(amountWei),
@@ -66,15 +67,16 @@ export default class ZkopruWallet {
     erc20Amount: string,
     tokenAddr: string,
     weiPerByte: number | string,
+    spendables?: Utxo[]
   ): Promise<RawTx> {
     if (!this.wallet.account) {
       throw new Error('Account is not set')
     }
-    const spendables = await this.wallet.getSpendables(this.wallet.account)
+    const selectedUtxo = spendables ?? await this.wallet.getSpendables(this.wallet.account)
     const txBuilder = TxBuilder.from(this.wallet.account.zkAddress)
     try {
       return txBuilder
-        .provide(...spendables.map(note => Utxo.from(note)))
+        .provide(...selectedUtxo.map(note => Utxo.from(note)))
         .weiPerByte(weiPerByte)
         .sendERC20({
           erc20Amount: Fp.from(erc20Amount),
