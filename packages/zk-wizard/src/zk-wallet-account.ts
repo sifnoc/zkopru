@@ -403,18 +403,18 @@ export class ZkWalletAccount {
     return result
   }
 
-  async depositERC721Tx(
+  depositERC721Tx(
     eth: BigNumberish,
     addr: string,
     nft: BigNumberish,
     fee: BigNumberish,
     to?: ZkAddress,
-  ): Promise<{
+  ): {
     to: string
     data: any
     value: string
     onComplete: () => Promise<any>
-  }> {
+  } {
     if (!this.account) {
       throw new Error('Account is not set')
     }
