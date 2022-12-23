@@ -412,10 +412,10 @@ export class ZkWalletAccount {
   }
 
   depositERC721Tx(
-    eth: F,
+    eth: Fp,
     addr: string,
-    nft: F,
-    fee: F,
+    nft: Fp,
+    fee: Fp,
     to?: ZkAddress,
   ): {
     to: string
