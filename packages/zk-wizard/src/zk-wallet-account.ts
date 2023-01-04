@@ -404,10 +404,10 @@ export class ZkWalletAccount {
   }
 
   async depositERC721Tx(
-    eth: F,
+    eth: BigNumberish,
     addr: string,
-    nft: F,
-    fee: F,
+    nft: BigNumberish,
+    fee: BigNumberish,
     to?: ZkAddress,
   ): Promise<{
     to: string
